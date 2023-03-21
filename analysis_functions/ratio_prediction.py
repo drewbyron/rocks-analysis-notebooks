@@ -31,7 +31,7 @@ def AUC_expectation(set_fields, freq_BWs, b = 0, plot = False):
         freq_BWs[:,1], set_fields
     )
     energy_acceptances = np.stack((energy_acceptances_low, energy_acceptances_high), axis=-1)
-    
+
     # Empty dict to house relative rates. 
     rates = {}
     isotopes = {
@@ -46,7 +46,7 @@ def AUC_expectation(set_fields, freq_BWs, b = 0, plot = False):
         "bAc": 0,
         "dAc": 0,
         "Lambda": 0,
-        "b": 0
+        "b": -.7204*b
     },
     "He6": {
         "W0": 7.859525,
@@ -59,7 +59,7 @@ def AUC_expectation(set_fields, freq_BWs, b = 0, plot = False):
         "bAc": 0,
         "dAc": 0,
         "Lambda": 0,
-        "b": 0
+        "b": b
     }}
     # Need to figure out what is the correct value of he6b compared to ne19b?
     # isotopes = {"Ne19": {"Wmax": 5.337377690802349, "Z": 8, "A": 19, "decay_type": "+", "b": -b},
