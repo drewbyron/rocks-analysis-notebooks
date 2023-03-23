@@ -11,7 +11,6 @@ import numpy as np
 from scipy import integrate
 
 
-
 # Path to local imports. Alter to match your machine. 
 sys.path.append("/home/drew/He6CRES/he6-cres-spec-sims/")
 

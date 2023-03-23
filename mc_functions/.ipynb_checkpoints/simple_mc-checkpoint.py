@@ -49,7 +49,8 @@ def simple_MC(set_fields,
         # Apply a poisson statistic with the given mean for the event counts.  
         spectra_ne_exp["event_count"] = np.random.poisson(spectra_ne_exp["event_count"])
         spectra_he_exp["event_count"] = np.random.poisson(spectra_he_exp["event_count"])
-
+    
+    # Be careful to use this (correct but alternate) normalization.
     ratio_exp = re.build_ratio_altnorm(spectra_ne_exp, spectra_he_exp)
     
     return ratio_exp, spectra_ne_exp, spectra_he_exp

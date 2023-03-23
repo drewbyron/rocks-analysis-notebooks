@@ -6,6 +6,12 @@ import pandas as pd
 import numpy as np
 
 
+def add_detectability(events): 
+    events["detectability"] = ((events["EventTimeLength"]/1)**2 + (events["EventFreqLength"]/1200e6)**2)**.5 * events["mMeanSNR"]
+    
+    return events
+
+
 def cut_df(events, cuts):
 
     events_cut = events.copy()
@@ -38,6 +44,8 @@ def build_spectrum(events, root_files, cuts):
 
     TODO: Should make the cuts specific to the two isotopes.
     """
+    # Add composite features (currently only detectability)
+    events = add_detectability(events)
 
     # Collect all valid events.
     valid_events = cut_df(events, cuts)
