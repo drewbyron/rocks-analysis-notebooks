@@ -58,7 +58,7 @@ def simple_MC(set_fields,
 
 
 
-def objfunc_chisq(my_pars, freq_BWs, set_fields, ratio_exp, b): 
+def objfunc_chisq(my_pars, freq_BWs, set_fields, ratio_exp): 
 
     C =my_pars["C"].value
     b =my_pars["b"].value
