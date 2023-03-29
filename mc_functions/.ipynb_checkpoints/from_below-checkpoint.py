@@ -25,7 +25,7 @@ def build_canditate_events(freq_BW_visible, set_fields,
     
     # Feed the info dict to the BetaSpectrum class.
     bspec = bs.BetaSpectrum(isotope, b = 0 )
-    Ws = np.linspace(1.00, bspec.W0, 1000)
+    Ws = np.linspace(1.00, bspec.W0, int(1e4))
     pdf = bspec.dNdE(Ws)
     
     # Sample n gammas from full pdf.
@@ -141,7 +141,6 @@ def get_slope_info(events, freq_BW_visible, fix_slopes):
 
         events["power_start"] = power_larmor
         events["Slope"] = sc.df_dt(events["energy_start"], events["set_field"], events["power_start"])
-        print("HI:", events["Slope"].max())
     
     events["energy_end"] = events["energy_start"] - power_larmor*events["TimeLength"]*sc.J_TO_EV
     events["gamma_end"] = np.clip(sc.gamma(events["energy_end"]),1, np.inf)
@@ -254,6 +253,37 @@ def build_MC_spectra(events_ne, events_he, cuts, monitor_rate = 10**8, mon_pois 
     spectra_ne_exp["event_count"] = ne_events_cut.groupby("set_field").EventStartFreq.count().values
     spectra_he_exp["event_count"] = he_events_cut.groupby("set_field").EventStartFreq.count().values
 
+    spectra_ne_exp["tot_monitor_rate"] = monitor_rate
+    spectra_he_exp["tot_monitor_rate"] = monitor_rate
+    
+    if mon_pois:
+        # Apply a poisson statistic with the given mean for the event counts. 
+        spectra_ne_exp["tot_monitor_rate"] = np.random.poisson(spectra_ne_exp["tot_monitor_rate"])
+        spectra_he_exp["tot_monitor_rate"] = np.random.poisson(spectra_he_exp["tot_monitor_rate"])
+    
+    return spectra_ne_exp, spectra_he_exp
+
+
+def build_MC_spectra_alt(events_ne, events_he, cuts, monitor_rate = 10**8, mon_pois = True): 
+    
+    # Simulate data that provides the "spectra" df for both ne and he.
+    spectra_ne_exp = pd.DataFrame()
+    spectra_he_exp = pd.DataFrame()
+    
+    ne_events_cut = cut_df(events_ne, cuts)
+    he_events_cut = cut_df(events_he, cuts)
+
+    spectra_ne_exp["set_field"] = ne_events_cut.set_field.unique()
+    spectra_he_exp["set_field"] = he_events_cut.set_field.unique()
+
+
+    spectra_ne_exp["event_count"] = ne_events_cut.groupby("set_field").EventStartFreq.count().values
+    spectra_he_exp["event_count"] = he_events_cut.groupby("set_field").EventStartFreq.count().values
+    
+    spectra_ne_exp["event_count"]*= ne_events_cut.groupby("set_field").detection_prob.mean().values
+    spectra_he_exp["event_count"]*= he_events_cut.groupby("set_field").detection_prob.mean().values
+    
+    
     spectra_ne_exp["tot_monitor_rate"] = monitor_rate
     spectra_he_exp["tot_monitor_rate"] = monitor_rate
     
