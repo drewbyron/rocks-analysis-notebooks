@@ -11,9 +11,9 @@ def cluster_and_clean_events(events, clust_params={}, diagnostics=False):
     if diagnostics:
 
         # Take stock of what events were like before the clustering.
-        pre_cuts_counts = events.groupby("set_field").file_id.count()
-        pre_cuts_summary_mean = events.groupby("set_field").mean()
-        pre_cuts_summary_std = events.groupby("set_field").std()
+        pre_clust_counts = events.groupby("set_field").file_id.count()
+        pre_clust_summary_mean = events.groupby("set_field").mean()
+        pre_clust_summary_std = events.groupby("set_field").std()
 
     events = cluster_events(events, clust_params=clust_params)
 
@@ -23,23 +23,23 @@ def cluster_and_clean_events(events, clust_params={}, diagnostics=False):
     if diagnostics:
 
         # Take stock of what events were like after the clustering.
-        post_cuts_counts = events.groupby("set_field").file_id.count()
-        post_cuts_summary = events.groupby("set_field").mean()
-        post_cuts_summary = events.groupby("set_field").std()
+        post_clust_counts = events.groupby("set_field").file_id.count()
+        post_clust_summary_mean = events.groupby("set_field").mean()
+        post_clust_summary_std = events.groupby("set_field").std()
 
         print("Summary of clustring: \n")
         print(
             f"\nFractional reduction in counts from clustering:",
-            post_cuts_counts / pre_cuts_counts,
+            post_clust_counts / pre_clust_counts,
         )
         print("\nPre-clustering means:")
-        display(pre_cuts_summary_mean)
+        display(pre_clust_summary_mean)
         print("\nPre-clustering stds:")
-        display(pre_cuts_summary_std)
+        display(pre_clust_summary_std)
         print("\nPost-clustering means:")
-        display(post_cuts_summary_mean)
+        display(post_clust_summary_mean)
         print("\nPost-clustering stds:")
-        display(post_cuts_summary_std)
+        display(post_clust_summary_std)
 
     return events
 
