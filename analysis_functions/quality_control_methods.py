@@ -6,24 +6,57 @@ import seaborn as sns
 from datetime import datetime
 import numpy as np
 
+import analysis_functions.ratio_experiment as re
 
-def events_summary(events, title=""):
+def events_summary(events, root_files, title=""):
     """
-    Prints a summary of what run_ids belong to what set field and
+    Prints a summary of what run_ids belong to what set field,
+    plots counts vs run_id and mon_rate vs run_id to identify weirdness.
     """
 
     print(f"\n {title}: List of run_ids vs set_field in events df")
     print(events.groupby(["set_field"]).run_id.unique().reset_index())
     print("=================\n")
 
-    fig, ax = plt.subplots(figsize=(12, 4))
+    fig1, ax1 = plt.subplots(figsize=(12, 4))
     events.groupby(["run_id"]).file_id.count().to_frame("counts").reset_index().plot(
         x="run_id",
         title=f"{title}: event count vs run_id",
-        ax=ax,
+        ax=ax1,
         ls="dotted",
         marker="o",
     )
+
+    fig2, ax2 = plt.subplots(figsize=(12, 4))
+    events.groupby(["run_id"]).monitor_rate.mean().to_frame(
+        "mon_rate (mean)"
+    ).reset_index().plot(
+        x="run_id",
+        title=f"{title}: mon_rate vs run_id",
+        ax=ax2,
+        ls="dotted",
+        marker="o",
+    )
+
+    fig3, ax3 = plt.subplots(figsize=(12, 4))
+    event_counts = events.groupby(["run_id"]).file_id.count().to_frame(
+        "counts"
+    )
+
+    # Here we use the same exact method that the normalization is later build with. 
+    # See the ratio_experiment.py module for how the spectra are normalized. 
+    monitor_rate = re.build_normalization(root_files).groupby("run_id").sum().monitor_rate
+
+    normed_rate = (event_counts.counts/monitor_rate).reset_index()
+
+    normed_rate.plot(
+        x="run_id",
+        title=f"{title}: normed rate vs run_id",
+        ax=ax3,
+        ls="dotted",
+        marker="o",
+    )
+    plt.show()
 
     return None
 
@@ -79,7 +112,9 @@ def viz_events(events, file_id_max=1, set_fields=[1, 2, 3], title=""):
 
             ax.set_ylabel("Freq (Hz)")
             ax.set_xlabel("Time (s)")
-            plt.title(f"{title}. {set_field} T. rid: {name[0]}, fid: {name[1]}. events: {len(group)}")
+            plt.title(
+                f"{title}. {set_field} T. rid: {name[0]}, fid: {name[1]}. events: {len(group)}"
+            )
             plt.show()
 
     return None

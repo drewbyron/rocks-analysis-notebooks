@@ -6,17 +6,40 @@ import pandas as pd
 import numpy as np
 
 
-def add_detectability(events): 
-    events["detectability"] = ((events["EventTimeLength"]/1)**2 + (events["EventFreqLength"]/1200e6)**2)**.5 * events["mMeanSNR"]
-    
+def add_detectability(events):
+    events["detectability"] = (
+        (events["EventTimeLength"] / 1) ** 2 + (events["EventFreqLength"] / 1200e6) ** 2
+    ) ** 0.5 * events["mMeanSNR"]
+
     return events
 
 
-def cut_df(events, cuts):
+def cut_df(events, cuts, plot_fw_cuts=False):
 
+    # Make a copy of events to alter and return.
     events_cut = events.copy()
 
+    # Note that the None prevents a key error if you have no field-wise cuts.
+    field_wise_cuts = cuts.pop("field_wise", None)
+
+    if field_wise_cuts is not None:
+        for column, cut in field_wise_cuts.items():
+
+            events_cut["cut_cond"] = events.groupby(["set_field"])[column].transform(
+                cut[0]
+            )
+            if plot_fw_cuts:
+                events_cut["cut_cond"].plot()
+                plt.show()
+
+            cond = (events_cut[column] >= cut[1][0] * events_cut["cut_cond"]) & (
+                events_cut[column] <= cut[1][1] * events_cut["cut_cond"]
+            )
+
+            events_cut = events_cut[cond]
+
     for column, cut in cuts.items():
+
         events_cut = events_cut[
             (events_cut[column] >= cut[0]) & (events_cut[column] <= cut[1])
         ]
@@ -149,26 +172,18 @@ def build_ratio(ne_spectrum, he_spectrum):
 
 
 def build_ratio_altnorm(ne_spectrum, he_spectrum):
-    """Builds the field-wise normalized spectra and the ratio, with undertainties. 
+    """Builds the field-wise normalized spectra and the ratio, with undertainties.
     Use the alternate way of normalizing where you don't set mean to 1."""
 
     ratio = pd.DataFrame()
-    ratio["Ne19"] = (
-        ne_spectrum["event_count"] / ne_spectrum["tot_monitor_rate"]
-    )
-    ratio["He6"] = (
-        he_spectrum["event_count"] / he_spectrum["tot_monitor_rate"]
-    )
+    ratio["Ne19"] = ne_spectrum["event_count"] / ne_spectrum["tot_monitor_rate"]
+    ratio["He6"] = he_spectrum["event_count"] / he_spectrum["tot_monitor_rate"]
 
     ratio["Ratio"] = ratio["Ne19"] / ratio["He6"]
 
     ratio["sRatio"] = (
         ratio["Ratio"]
-        * (
-            1 / ne_spectrum["event_count"]
-            + 1 / he_spectrum["event_count"]
-        )
-        ** 0.5
+        * (1 / ne_spectrum["event_count"] + 1 / he_spectrum["event_count"]) ** 0.5
     )
 
     ratio["set_field"] = ne_spectrum["set_field"]

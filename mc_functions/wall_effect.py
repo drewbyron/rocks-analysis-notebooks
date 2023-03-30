@@ -46,33 +46,8 @@ def AUC_expectation_we(set_fields, freq_BWs, b = 0, plot = False, wall_effect = 
     
     # Empty dict to house relative rates. 
     rates = {}
-    isotopes = {
-    "Ne19": {
-        "W0": 5.339539,
-        "Z": 10,
-        "A": 19,
-        "beta_type": "Mixed",
-        "decay_type":"+" ,
-        "mixing_ratio": 2.22,
-        "R": 2.9,
-        "bAc": 0,
-        "dAc": 0,
-        "Lambda": 0,
-        "b": -.7204*b
-    },
-    "He6": {
-        "W0": 7.859525,
-        "Z": 2,
-        "A": 6,
-        "beta_type": "Gamow-Teller",
-        "decay_type":"-" ,
-        "mixing_ratio": None,
-        "R": 1.6,
-        "bAc": 0,
-        "dAc": 0,
-        "Lambda": 0,
-        "b": b
-    }}
+
+    isotopes = {"Ne19": {"b": -0.7204 * b}, "He6": {"b": b}}
 
     # This delta_W prevents a zero argument in a log. Doesn't effect pdfs
     delta_W = 10**-10
@@ -89,7 +64,7 @@ def AUC_expectation_we(set_fields, freq_BWs, b = 0, plot = False, wall_effect = 
         W_high = sc.gamma(energy_acceptances[:, 1])-delta_W
 
         # Feed the info dict to the BetaSpectrum class. 
-        bspec = bs.BetaSpectrum(isotope_info)
+        bspec = bs.BetaSpectrum(isotope_name, b = isotope_info["b"] )
         
         if wall_effect: 
             
