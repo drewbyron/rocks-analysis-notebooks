@@ -60,7 +60,7 @@ def build_normalization(root_files):
     return normalization
 
 
-def build_spectrum(events, root_files, cuts):
+def build_spectrum(events, root_files, cuts, diagnostics = False):
     """Builds the field-wise normalized spectrum from the events and root_files dfs.
     Example cuts: cuts = {"EventStartFreq": (100e6, 1200e6), "EventNBins": (0, np.inf)}
     Document right asap.
@@ -69,9 +69,19 @@ def build_spectrum(events, root_files, cuts):
     """
     # Add composite features (currently only detectability)
     events = add_detectability(events)
+  
 
     # Collect all valid events.
     valid_events = cut_df(events, cuts)
+
+    if diagnostics:
+        # Take stock of what events were like before the cuts.
+        pre_cuts_counts = events.groupby("set_field").file_id.count()
+        # Take stock of what events were like after the cuts.
+        post_cuts_counts = valid_events.groupby("set_field").file_id.count()
+
+        print("Fractional change in counts:")
+        print(post_cuts_counts/pre_cuts_counts)
 
     # Build a normalization df that contains the monitor rate for each existing root file.
     normalization = build_normalization(root_files)
