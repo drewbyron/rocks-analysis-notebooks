@@ -14,6 +14,23 @@ def add_detectability(events):
     return events
 
 
+def add_field_wise_percentage(events, cols=["mMeanSNR"]):
+    events_copy = events.copy()
+
+    for col in cols:
+        col_perc = col + "_p"
+        events_copy[col_perc] = np.NaN
+        for name, group in events_copy.groupby(["set_field"]):
+            cond = events_copy.set_field == name
+            sz = group[col].size - 1
+            events_copy.loc[:, (col_perc)][cond] = (
+                events_copy.loc[:, (col)][cond]
+                .rank(method="max")
+                .apply(lambda x: (x - 1) / sz)
+            )
+    return events_copy
+
+
 def cut_df(events, cuts, plot_fw_cuts=False):
 
     # Make a copy of events to alter and return.
@@ -60,7 +77,7 @@ def build_normalization(root_files):
     return normalization
 
 
-def build_spectrum(events, root_files, cuts, diagnostics = False):
+def build_spectrum(events, root_files, cuts, diagnostics=False):
     """Builds the field-wise normalized spectrum from the events and root_files dfs.
     Example cuts: cuts = {"EventStartFreq": (100e6, 1200e6), "EventNBins": (0, np.inf)}
     Document right asap.
@@ -69,7 +86,6 @@ def build_spectrum(events, root_files, cuts, diagnostics = False):
     """
     # Add composite features (currently only detectability)
     events = add_detectability(events)
-  
 
     # Collect all valid events.
     valid_events = cut_df(events, cuts)
@@ -81,7 +97,7 @@ def build_spectrum(events, root_files, cuts, diagnostics = False):
         post_cuts_counts = valid_events.groupby("set_field").file_id.count()
 
         print("Fractional change in counts:")
-        print(post_cuts_counts/pre_cuts_counts)
+        print(post_cuts_counts / pre_cuts_counts)
 
     # Build a normalization df that contains the monitor rate for each existing root file.
     normalization = build_normalization(root_files)

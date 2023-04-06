@@ -20,7 +20,6 @@ def cluster_and_clean_events(events, clust_params={}, diagnostics=False):
     # cleanup
     events = update_event_info(events)
     events = build_events(events)
-    
     if diagnostics:
 
         # Take stock of what events were like after the clustering.

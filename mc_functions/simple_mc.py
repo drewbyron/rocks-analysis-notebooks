@@ -64,6 +64,7 @@ def objfunc_chisq(my_pars, freq_BWs, set_fields, ratio_exp):
     b =my_pars["b"].value
 
     ratio_pred = rp.AUC_expectation(set_fields, freq_BWs, b = b, plot = False)
+    # print(b)
     chisq_gauss = (ratio_pred["Ratio"] - C*ratio_exp["Ratio"])/ (C*ratio_exp["sRatio"])
 
     return chisq_gauss
