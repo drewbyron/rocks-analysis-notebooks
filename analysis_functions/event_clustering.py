@@ -14,7 +14,8 @@ def cluster_and_clean_events(events, clust_params={}, diagnostics=False):
         pre_clust_counts = events.groupby("set_field").file_id.count()
         pre_clust_summary_mean = events.groupby("set_field").mean()
         pre_clust_summary_std = events.groupby("set_field").std()
-
+    
+    # cluster
     events = cluster_events(events, clust_params=clust_params)
 
     # cleanup
