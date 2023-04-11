@@ -32,11 +32,11 @@ import mc_functions.from_below as fb
 
 # Set plot parameters.
 params = {
-    "axes.titlesize": 12,
-    "legend.fontsize": 10,
-    "axes.labelsize": 10,
-    "xtick.labelsize": 10,
-    "ytick.labelsize": 10,
+    "axes.titlesize": 15,
+    "legend.fontsize": 12,
+    "axes.labelsize": 12,
+    "xtick.labelsize": 12,
+    "ytick.labelsize": 12,
 }
 plt.rcParams.update(params)
 
@@ -50,7 +50,7 @@ print(fig_path)
 # Plotting functions.
 def plot_sim_exp_ratio(ratio_exp, ax):
 
-    label = f"ratio, MC sim"
+    label = f"Monte Carlo"
     ax.errorbar(
         ratio_exp.index,
         ratio_exp.Ratio,
@@ -67,7 +67,7 @@ def plot_sim_exp_ratio(ratio_exp, ax):
 def plot_predicted_ratio(ratio_pre, ax, label=None):
 
     if label is None:
-        label = f"ratio, predicted"
+        label = f"Prediction"
     ax.plot(
         ratio_pre.index,
         ratio_pre.Ratio,
@@ -123,7 +123,7 @@ print(fit_report(result.params))
 
 # Plot results.
 f, (ax0, ax1) = plt.subplots(
-    2, 1, gridspec_kw={"height_ratios": [3, 1]}, figsize=(12, 8)
+    2, 1, gridspec_kw={"height_ratios": [3, 1]}, figsize=(12, 7)
 )
 
 C = result.params["C"].value
@@ -138,17 +138,18 @@ plot_predicted_ratio(ratio_pred, ax0)
 # ax0.set_yscale("log")
 ax0.set_ylabel("ratio")
 ax1.set_ylabel(r"$\sigma$")
-ax0.set_title(f"Simulated Experiment")
+ax0.set_title(f"Simulated Experiment. Counts per isotope: 10^4")
 ax0.legend()
 
 ax0.set_ylabel("ratio")
 ax1.set_xlabel("Set Field (T)")
+ax1.set_ylim(-2,2)
 
 
 ax1.plot(
     ratio_pred.index,
     (ratio_exp_cp.Ratio - ratio_pred.Ratio) / ratio_exp_cp.sRatio,
-    label=f"residual",
+    label=f"residuals",
     marker="o",
     ls="None",
     ms=6,
@@ -157,5 +158,5 @@ ax1.plot(
 ax1.legend()
 
 # Save and display the figure.
-plt.savefig(fig_path, bbox_inches='tight', dpi = 300)
+plt.savefig(fig_path, bbox_inches="tight", dpi=300)
 plt.show()

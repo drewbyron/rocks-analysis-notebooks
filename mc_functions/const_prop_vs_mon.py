@@ -14,25 +14,33 @@ import mc_functions.simple_mc as mc
 
 
 def run_mon_const_prop_test(set_fields, freq_BW, exp_max=12, trial_max=20):
-
+    """
+    Note that this is looking at the total number of mon counts over the 
+    entire isotope (split evening among the different set fields).
+    """
     # Tile freq_BW.
     freq_BWs = np.tile(freq_BW, (len(set_fields), 1))
 
     # C, relationship between he and ne monitor.
-    C_exp = np.random.uniform(0.25, 1.75)
+    # C_exp = np.random.uniform(0.25, 1.75)
+    C_exp = 1
 
     # count rate tot:
-    N = 10**10
+    N = 10**15
     # Set little b.
     b = 0
 
-    b_uncert = {}
-    for exp in np.arange(3, exp_max, 1):
+    bs_uncert = {}
+    bs = {}
 
+    for exp in np.arange(4, exp_max, 1):
+
+        
         # Number of mon counts per field
-        mon = int(10**exp)
+        mon = int((10**exp)/len(set_fields))
 
-        b_uncert[exp] = []
+        bs_uncert[exp] = []
+        bs[exp] = []
 
         for trial in range(trial_max):
             print(f"mon counts per field = 10**{exp}, trial = {trial}")
@@ -60,14 +68,16 @@ def run_mon_const_prop_test(set_fields, freq_BW, exp_max=12, trial_max=20):
                 mc.objfunc_chisq, my_pars, args=(freq_BWs, set_fields, ratio_exp)
             )
 
-            b_uncert[exp].append(result.params["b"].stderr)
+            bs_uncert[exp].append(result.params["b"].stderr)
+            bs[exp].append(result.params["b"].value)
 
-    b_uncert = pd.DataFrame(b_uncert)
+    bs_uncert = pd.DataFrame(bs_uncert)
+    bs = pd.DataFrame(bs)
 
-    return b_uncert
+    return bs, bs_uncert
 
 
-def plot_mon_const_prop_test(b_uncert, path):
+def plot_mon_const_prop_test(bs_uncert, path):
 
     # ------ Set Thesis Plot Parameters -----------
     params = {
@@ -82,23 +92,25 @@ def plot_mon_const_prop_test(b_uncert, path):
 
     # Plot results.
     fig0, ax0 = plt.subplots(figsize=figsize)
-    N = 10 ** b_uncert.mean().index.values
-    Const = b_uncert.mean().values * np.sqrt(N)
-    Const_err = b_uncert.std().values * np.sqrt(N)
+    N = 10 ** bs_uncert.mean().index.astype(int).values
+    Const = bs_uncert.mean().values * np.sqrt(N)
+    Const_err = bs_uncert.std().values * np.sqrt(N)
     plt.errorbar(N, Const, yerr=Const_err)
+
+    # recalc without breaking up into orders of mag. 
+    Const = np.nanmean((bs_uncert * np.sqrt(N)).values)
+    Const_err = np.nanstd((bs_uncert * np.sqrt(N)).values)
+    print(f"X_mon = {Const:.3f}+- {Const_err:.3f}")
 
     ax0.set_xscale("log")
     ax0.set_ylabel("Proportionality constant (unitless)")
     ax0.set_xlabel("N per isotope (counts)")
     ax0.set_title(
-        f"Sensitivity to monitor counts per field per isotope. Const = {Const.mean():.2f} +-{Const.std():.2f}"
+        f"Sensitivity to monitor counts per field per isotope. Const = {Const:.3f} +-{Const:.3f}"
     )
-
-
 
     # Save the figure.
     if path is not None:
         plt.savefig(path, bbox_inches="tight", dpi=300)
-    plt.show()
 
     return None

@@ -207,11 +207,23 @@ def build_ratio_altnorm(ne_spectrum, he_spectrum):
 
     ratio["Ratio"] = ratio["Ne19"] / ratio["He6"]
 
+    # OLD (as of 4/10/23) definition of the uncertainty, adding in mon err.
+    # ratio["sRatio"] = (
+    #     ratio["Ratio"]
+    #     * (1 / ne_spectrum["event_count"] + 1 / he_spectrum["event_count"]) ** 0.5
+    # )
+
+    # NEW (as of 4/10/23) definition of the uncertainty, adding in mon err.
     ratio["sRatio"] = (
         ratio["Ratio"]
-        * (1 / ne_spectrum["event_count"] + 1 / he_spectrum["event_count"]) ** 0.5
+        * (
+            1 / ne_spectrum["event_count"]
+            + 1 / he_spectrum["event_count"]
+            + 1 / ne_spectrum["tot_monitor_rate"]
+            + 1 / ne_spectrum["tot_monitor_rate"]
+        )
+        ** 0.5
     )
-
     ratio["set_field"] = ne_spectrum["set_field"]
     ratio.set_index("set_field", inplace=True)
 
