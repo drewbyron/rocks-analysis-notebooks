@@ -89,18 +89,19 @@ def plot_N_const_prop_test(bs_uncert, path):
     N = 10 ** bs_uncert.mean().index.astype(int).values
     Const = bs_uncert.mean().values * np.sqrt(N)
     Const_err = bs_uncert.std().values * np.sqrt(N)
+    print(f"X_cres = {Const.mean():.3f}+- {Const.std():.3f}")
     plt.errorbar(N, Const, yerr=Const_err)
 
-    # recalc without breaking up into orders of mag. 
+    # recalc without breaking up into orders of mag.
     Const = np.nanmean((bs_uncert * np.sqrt(N)).values)
     Const_err = np.nanstd((bs_uncert * np.sqrt(N)).values)
-    print(f"X_cres = {Const:.3f}+- {Const_err:.3f}")
+    print(f"X_cres_alt = {Const:.3f}+- {Const_err:.3f}")
 
     ax0.set_xscale("log")
     ax0.set_ylabel("Proportionality constant (unitless)")
     ax0.set_xlabel("N per isotope (counts)")
     ax0.set_title(
-        f"Sensitivity to CRES counts per isotope. Const = {Const.mean():.2f} +-{Const.std():.2f}"
+        f"Sensitivity to CRES counts per isotope. Const = {Const:.2f} +-{Const_err:.2f}"
     )
 
     # Save the figure.

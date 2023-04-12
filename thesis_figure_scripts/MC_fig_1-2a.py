@@ -56,8 +56,7 @@ mon_bs_uncert_csv_path = fig_dir / Path("mon_bs_uncert_a.csv")
 
 
 # Whether or not to rerun the experiment.
-rerun = True
-
+rerun = False
 # Simulation parameters.
 exp_max = 12
 trial_max = 100
