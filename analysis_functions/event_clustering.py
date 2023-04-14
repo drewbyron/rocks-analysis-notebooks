@@ -14,14 +14,14 @@ def cluster_and_clean_events(events, clust_params={}, diagnostics=False):
         pre_clust_counts = events.groupby("set_field").file_id.count()
         pre_clust_summary_mean = events.groupby("set_field").mean()
         pre_clust_summary_std = events.groupby("set_field").std()
-    
+
     # cluster
     events = cluster_events(events, clust_params=clust_params)
 
     # cleanup
     events = update_event_info(events)
     events = build_events(events)
-    
+
     if diagnostics:
 
         # Take stock of what events were like after the clustering.
@@ -46,7 +46,7 @@ def cluster_and_clean_events(events, clust_params={}, diagnostics=False):
     return events
 
 
-def cluster_events(events, clust_params={}):
+def cluster_events(events, clust_params={}, slew_cycle=35e-3):
     """Notes:
     * This is really clustering events not track segments.
     * Default up to 1/24/23 was .003 up to now.
@@ -55,6 +55,7 @@ def cluster_events(events, clust_params={}):
 
     events_copy = events.copy()
     events_copy["event_label"] = np.NaN
+    events_copy["too_long_to_clust"] = False
 
     for i, (name, group) in enumerate(events_copy.groupby(["run_id", "file_id"])):
 
@@ -68,8 +69,30 @@ def cluster_events(events, clust_params={}):
             eps=clust_params[set_field]["eps"],
             min_samples=1,
         )
-    events_copy["EventID"] = events_copy["event_label"] + 1
 
+        # Veto events that have been reconstructed as being 10% longer than the slew_cycle
+        # length.
+        new_event_starts = (
+            events_copy.loc[condition, :]
+            .groupby(["run_id", "file_id", "event_label"])["EventStartTime"]
+            .transform("min")
+        )
+        new_event_ends = (
+            events_copy.loc[condition, :]
+            .groupby(["run_id", "file_id", "event_label"])["EventEndTime"]
+            .transform("max")
+        )
+        new_event_lens = new_event_ends - new_event_starts
+
+        # Arbitrarily choosing 10% here.
+        veto_cond = new_event_lens > slew_cycle * 1.1
+        events_copy.loc[(veto_cond & condition), "too_long_to_clust"] = True
+        
+        if veto_cond.sum(): 
+            print("LENGTH veto!", new_event_lens[veto_cond == True])
+
+    events_copy["EventID"] = events_copy["event_label"] + 1
+    print("Num that shouldn't be clustered: ", events_copy["too_long_to_clust"].sum())
     return events_copy
 
 
