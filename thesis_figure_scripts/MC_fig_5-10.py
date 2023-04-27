@@ -35,21 +35,25 @@ import mc_functions.from_below as fb
 params = {
     "axes.titlesize": 15,
     "legend.fontsize": 15,
-    "axes.labelsize": 15,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12,
+    "axes.labelsize": 20,
+    "xtick.labelsize": 15,
+    "ytick.labelsize": 15,
 }
 plt.rcParams.update(params)
 
 # Set fig path.
 fig_dir = Path("/media/drew/T7 Shield/thesis_figures/monte_carlo")
 fig_base_name = "MC_wall_effect_"
-fi_suffix = ".png"
+fig_suffix = ".png"
+
+# Utility function.
+def get_cmap(n, name="hsv"):
+    """Returns a function that maps each index in 0, 1, ..., n-1 to a distinct
+    RGB color; the keyword argument name must be a standard mpl colormap name."""
+    return plt.cm.get_cmap(name, n)
 
 
 # ------ Plot 1-2: gammas, r_cycl, efficiencies -----------
-
-
 def wall_efficiency(gamma, field, trap_radius=0.578e-2):
 
     energy = sc.energy(gamma)
@@ -59,8 +63,9 @@ def wall_efficiency(gamma, field, trap_radius=0.578e-2):
     return e
 
 
-def plots1_2_3(set_fields, freq_BWs, b=0):
+def plots1_2_3(set_fields, freq_BW, b=0):
 
+    freq_BWs = np.tile(freq_BW, (len(set_fields), 1))
     integrate_vect = np.vectorize(integrate.quad)
 
     energy_acceptances_high = sc.freq_to_energy(freq_BWs[:, 0], set_fields)
@@ -73,16 +78,18 @@ def plots1_2_3(set_fields, freq_BWs, b=0):
     rates = {}
 
     isotopes = {"Ne19": {"b": -0.7204 * b}, "He6": {"b": b}}
+    colors = {"Ne19": "tab:blue", "He6": "tab:orange"}
+    field_cmap = get_cmap(len(set_fields))
 
     # This delta_W prevents a zero argument in a log. Doesn't effect pdfs
     delta_W = 10**-10
 
     pdf_plot_pts = 10**2
     f0, ax0 = plt.subplots(1, figsize=(10, 5))
-    f1, ax1 = plt.subplots(1, figsize=(10, 5))
-    f2, ax2 = plt.subplots(1, figsize=(10, 5))
+    f1, ax1 = plt.subplots(1, figsize=(10, 6))
+    f2, ax2 = plt.subplots(1, figsize=(10, 6))
 
-    for isotope_name, isotope_info in isotopes.items():
+    for j, (isotope_name, isotope_info) in enumerate(isotopes.items()):
 
         W_low = sc.gamma(energy_acceptances[:, 0]) + delta_W
         W_high = sc.gamma(energy_acceptances[:, 1]) - delta_W
@@ -99,17 +106,247 @@ def plots1_2_3(set_fields, freq_BWs, b=0):
 
         Ws = np.linspace(W_low, W_high, pdf_plot_pts)
         pdf = bspec.dNdE(Ws)
-        ax0.plot(Ws, pdf)
+        for i, (W, p) in enumerate(zip(Ws.T, pdf.T)):
+            if i == 0:
+                ax0.fill_between(
+                    W,
+                    0,
+                    p,
+                    alpha=0.5,
+                    color=colors[isotope_name],
+                    label=f"{isotope_name}",
+                )
+            else:
+                ax0.fill_between(W, 0, p, alpha=0.5, color=colors[isotope_name])
+        ax0.legend()
+        ax0.set_xlabel(r"$\gamma$")
+        ax0.set_ylabel(r"$\frac{dN}{dE}$")
 
-        r = sc.cyc_radius(sc.energy(Ws), set_fields, pitch_angle=90)
-        ax1.plot(Ws, r, label=set_fields)
-        ax1.legend()
+        if j == 0:
+            rs = sc.cyc_radius(sc.energy(Ws), set_fields, pitch_angle=90)
+            effs = wall_efficiency(Ws, set_fields)
+            for i, (W, r, eff) in enumerate(zip(Ws.T, rs.T, effs.T)):
+                label = f"{set_fields[i]:.2f} T"
+                lw = 3
+                ax1.plot(W, r * 1e3, label=label, color=field_cmap(i), linewidth=lw)
+                ax2.plot(W, eff, label=label, color=field_cmap(i), linewidth=lw)
 
-        eff = wall_efficiency(Ws, set_fields)
-        ax2.plot(Ws, eff)
-    plt.show()
+            ax1.legend()
+            ax2.legend()
+
+            ax1.set_xlabel(r"$\gamma$")
+            ax2.set_xlabel(r"$\gamma$")
+
+            ax1.set_ylabel(r"$r_{cycl}$ (mm)")
+            ax2.set_ylabel(r"Efficiency ($\epsilon_{e}(E)_{WE}$)")
+
+    # Save the figures to disk.
+    f0_path = fig_dir / Path(fig_base_name + "0" + fig_suffix)
+    f1_path = fig_dir / Path(fig_base_name + "1" + fig_suffix)
+    f2_path = fig_dir / Path(fig_base_name + "2" + fig_suffix)
+    f0.savefig(f0_path, bbox_inches="tight", dpi=300)
+    f1.savefig(f1_path, bbox_inches="tight", dpi=300)
+    f2.savefig(f2_path, bbox_inches="tight", dpi=300)
+
+    # plt.show()
 
     return None
+
+
+def wall_effect_correction(set_fields, freq_BW, freq_chunk=1.1e9):
+    print(f"Wall effect correction to ratio.")
+    f3, ax3 = plt.subplots(1, figsize=(10, 6))
+
+    freq_BW_tot = freq_BW[1] - freq_BW[0]
+    n_chunks = int(np.ceil((freq_BW_tot / freq_chunk)))
+    print(f"n_chunks: {n_chunks}")
+
+    for i, chunk in enumerate(range(n_chunks)):
+        freq_BW_chunk = np.clip(
+            np.array(
+                [freq_BW[0] + freq_chunk * chunk, freq_BW[0] + freq_chunk * (chunk + 1)]
+            ),
+            0,
+            freq_BW.max(),
+        )
+        freq_BW_chunk_tot = freq_BW_chunk[1] - freq_BW_chunk[0]
+        freq_BWs = np.tile(freq_BW_chunk, (len(set_fields), 1))
+
+        ratio_wall = we.AUC_expectation_we(
+            set_fields, freq_BWs, b=0, plot=False, wall_effect=True
+        )
+
+        ratio_0 = we.AUC_expectation_we(
+            set_fields, freq_BWs, b=0, plot=False, wall_effect=False
+        )
+
+        wall_effect = (ratio_wall / ratio_0 - 1)["Ratio"]
+        ax3.plot(
+            set_fields,
+            wall_effect.abs().values,
+            label=f"chunk {chunk}: {freq_BWs[0,0]*1e-9:.1f}-{freq_BWs[0,1]*1e-9:.1f} GHz",
+        )
+
+    ax3.set_yscale("log")
+    ax3.set_xlabel(r"Field (T)")
+    ax3.set_ylabel(r"$abs\left(\frac{R_{wall}}{R_0} - 1 \right)$ ")
+    ax3.legend(loc="lower right")
+
+    f3_path = fig_dir / Path(fig_base_name + f"ratio_n_chunks_{n_chunks}" + fig_suffix)
+    f3.savefig(f3_path, bbox_inches="tight", dpi=300)
+
+    return None
+
+
+def corrected_spectrum(
+    set_fields,
+    freq_BW,
+    freq_chunk=1100e6,
+    corrections_off=False,
+    MC_label="simulated data(corrected)",
+):
+
+    print(f"Corrected spectrum with wall effect.")
+    C_exp = 0.75
+    b = 0
+
+    N_per_isotope = 10**6
+    mon_rate = 10**14
+
+    freq_BW_tot = freq_BW[1] - freq_BW[0]
+    n_chunks = int(np.ceil((freq_BW_tot / freq_chunk)))
+    print(f"n_chunks: {n_chunks}")
+
+    f4, (ax0, ax1) = plt.subplots(
+        2, 1, gridspec_kw={"height_ratios": [3, 1]}, figsize=(12, 9)
+    )
+
+    b_fits = []
+    b_errs = []
+
+    for i, chunk in enumerate(range(n_chunks)):
+        freq_BW_chunk = np.clip(
+            np.array(
+                [freq_BW[0] + freq_chunk * chunk, freq_BW[0] + freq_chunk * (chunk + 1)]
+            ),
+            0,
+            freq_BW.max(),
+        )
+        freq_BW_chunk_tot = freq_BW_chunk[1] - freq_BW_chunk[0]
+        N_per_isotope_in_chunk = int(N_per_isotope * freq_BW_chunk_tot / freq_BW_tot)
+        mon_rate_per_isotope_in_chunk = mon_rate
+        freq_BWs = np.tile(freq_BW_chunk, (len(set_fields), 1))
+
+        spectra_ne_we, spectra_he_we = we.we_simple_MC(
+            set_fields,
+            freq_BWs,
+            C_exp,
+            b,
+            counts_per_isotope=N_per_isotope_in_chunk,
+            monitor_rate=mon_rate_per_isotope_in_chunk,
+            counts_pois=False,
+            mon_pois=False,
+            wall_effect=True,
+        )
+
+        ratio_exp = re.build_ratio(spectra_ne_we, spectra_he_we)
+        # Conduct fit.
+        my_pars = Parameters()
+        my_pars.add("C", value=1, min=-100, max=100, vary=True)
+        my_pars.add("b", value=0, min=-10, max=10, vary=True)
+
+        result = minimize(
+            we.objfunc_chisq, my_pars, args=(freq_BWs, set_fields, ratio_exp)
+        )
+
+        # Fit report.
+        # print(fit_report(result.params))
+
+        C = result.params["C"].value
+        b = result.params["b"].value
+
+        # Get the SM prediction.
+        ratio_pred = we.AUC_expectation_we(
+            set_fields, freq_BWs, b=b, plot=False, wall_effect=False
+        )
+
+        ratio_corr = ratio_exp.copy()
+        ratio_corr["Ne19_corr"] = C * ratio_pred["He6"] * ratio_exp["Ratio"]
+        ratio_corr["sNe19_corr"] = C * ratio_pred["He6"] * ratio_exp["sRatio"]
+
+        if corrections_off:
+            print("experiment:", spectra_ne_we)
+            ratio_corr["Ne19_corr"] = (
+                spectra_ne_we["event_count"]
+                * ratio_corr["Ne19_corr"].mean()
+                / spectra_ne_we["event_count"].mean()
+            )
+            ratio_corr["sNe19_corr"] = C * ratio_pred["He6"] * ratio_exp["sRatio"]
+
+        (
+            gamma_acceptances,
+            gamma_widths,
+            gamma_heights,
+            gamma_height_errs,
+            SM_heights,
+        ) = ed.freq_to_energy_domain(set_fields, freq_BWs, ratio_corr, ratio_pred)
+
+        label_bool = i == 0
+        ed.energy_domain_plot(
+            ax0,
+            ax1,
+            gamma_acceptances,
+            gamma_widths,
+            gamma_heights,
+            gamma_height_errs,
+            SM_heights,
+            ratio_corr,
+            ratio_pred,
+            label=label_bool,
+            label_contents=MC_label,
+        )
+
+        # Now add to the list of b_normed
+
+        b_fits.append(result.params["b"].value)
+        b_errs.append(result.params["b"].stderr)
+
+    b_fits = np.array(b_fits)
+    b_errs = np.array(b_errs)
+
+    b_fit = np.average(b_fits, weights=b_errs)
+    b_err = np.sqrt(np.sum(b_errs**2))
+    print(b_fits)
+    print(b_errs)
+    print(f"\n\nFinal Result: b = {b_fit}+- {b_err}")
+    # NOw use the b we got from the fit in making the spectrum?? THINK ABOUT THAT.
+    isotopes = {"Ne19": {"b": -0.7204 * b}, "He6": {"b": b}}
+    # Feed the info dict to the BetaSpectrum class.
+    bspec = bs.BetaSpectrum("Ne19")
+
+    Ws = np.linspace(1.001, bspec.W0 - 0.001, 300)
+    pdf = bspec.dNdE(Ws)
+    ax0.plot(Ws, pdf, label="Ne19 pdf")
+
+    ax0.legend()
+    ax1.legend()
+
+    ax0.set_xlim(0.85, 5.5)
+    ax1.set_xlim(0.85, 5.5)
+
+    f4_path = fig_dir / Path(
+        fig_base_name
+        + f"corrected_spec_n_chunks_{n_chunks}_{corrections_off}"
+        + fig_suffix
+    )
+    f4.savefig(f4_path, bbox_inches="tight", dpi=300)
+
+    return None
+
+
+######################################
+######################################
+# Run the above functions to build thesis plots.
 
 
 # Select set fields.
@@ -117,145 +354,47 @@ set_fields = np.arange(0.75, 3.5, 0.25)
 
 # Full Freq BW.
 freq_BW = np.array([18.0e9, 19.1e9])
-freq_BWs = np.tile(freq_BW, (len(set_fields), 1))
 
-plots1_2_3(set_fields, freq_BWs)
+# Make basic first three plots illustrating the size of the effect.
+plots1_2_3(set_fields, freq_BW)
 
+# Select set fields.
+set_fields = np.arange(0.75, 3.25, 0.01)
 
-# if plot:
-#     ax0.set_xlabel(r"$\gamma$")
-#     ax0.set_title("He6 and Ne19 Spectra (pdf)")
-#     ax1.set_xlabel(r"$\gamma$")
-#     ax1.set_title("radius (m)")
-#     ax2.set_xlabel(r"$\gamma$")
-#     ax2.set_title("wall effect (efficiency)")
-#     plt.show()
+# Freq BW.
+freq_BW = np.array([18.1e9, 19.1e9])
+wall_effect_correction(set_fields, freq_BW, freq_chunk=1000e6)
 
-# for isotope in rates:
-#     rates[isotope] = np.array(rates[isotope])
+# Freq BW.
+freq_BW = np.array([18.1e9, 19.1e9])
+wall_effect_correction(set_fields, freq_BW, freq_chunk=200e6)
 
-# rates["set_fields"] = set_fields
-# rates = pd.DataFrame(rates)
+# Select set fields.
+set_fields = np.arange(0.75, 3.25, 0.25)
+# Full Freq BW.
+freq_BW = np.array([18.1e9, 19.1e9])
+corrected_spectrum(
+    set_fields,
+    freq_BW,
+    freq_chunk=1000e6,
+    corrections_off=False,
+    MC_label="simulated data (corrected)",
+)
+corrected_spectrum(
+    set_fields,
+    freq_BW,
+    freq_chunk=1000e6,
+    corrections_off=True,
+    MC_label="simulated data (uncorrected)",
+)
 
-# # Make the ratio a column of the df
-# rates["Ratio"] = rates["Ne19"] / rates["He6"]
-
-# rates.set_index("set_fields", inplace=True)
-# return rates
-
-
-## OLD DELETE
-
-# # Plotting functions.
-# def plot_sim_exp_ratio(ratio_exp, ax):
-
-#     label = f"Monte Carlo"
-#     ax.errorbar(
-#         ratio_exp.index,
-#         ratio_exp.Ratio,
-#         yerr=ratio_exp["sRatio"],
-#         label=label,
-#         marker="o",
-#         ms=6,
-#         color="tab:blue",
-#     )
-
-#     return None
-
-
-# def plot_predicted_ratio(ratio_pre, ax, label=None):
-
-#     if label is None:
-#         label = f"Prediction"
-#     ax.plot(
-#         ratio_pre.index,
-#         ratio_pre.Ratio,
-#         label=label,
-#         marker="o",
-#         ms=6,
-#         color="tab:orange",
-#     )
-
-#     return None
-
-
-# # Select set fields.
-# set_fields = np.arange(0.75, 3.5, 0.25)
-# # Freq BW.
-# freq_BW = np.array([19.0e9, 19.1e9])
-# # Tile freq_BW.
-# freq_BWs = np.tile(freq_BW, (len(set_fields), 1))
-
-# # C, relationship between he and ne monitor.
-# C_exp = np.random.uniform(0.5, 1.5)
-
-# # Number of counts:
-# N = 10**4
-# # monitor rate tot:
-# mon = 10**8
-# # Set little b.
-# b = 0
-
-# # Simulate simple experiment.
-# ratio_exp, spectra_ne_exp, spectra_he_exp = mc.simple_MC(
-#     set_fields,
-#     freq_BWs,
-#     C_exp,
-#     b,
-#     counts_per_isotope=N,
-#     monitor_rate=mon,
-#     counts_pois=True,
-#     mon_pois=True,
-# )
-
-# ratio_pred = rp.AUC_expectation(set_fields, freq_BWs, b=b, plot=False)
-
-# # Conduct fit.
-# my_pars = Parameters()
-# my_pars.add("C", value=1, min=0, max=10, vary=True)
-# my_pars.add("b", value=0.1, min=-10, max=10, vary=True)
-
-# result = minimize(mc.objfunc_chisq, my_pars, args=(freq_BWs, set_fields, ratio_exp))
-
-# # Fit report.
-# print(fit_report(result.params))
-
-# # Plot results.
-# f, (ax0, ax1) = plt.subplots(
-#     2, 1, gridspec_kw={"height_ratios": [3, 1]}, figsize=(12, 7)
-# )
-
-# C = result.params["C"].value
-
-# ratio_exp_cp = ratio_exp.copy()
-# ratio_exp_cp["Ratio"] = C * ratio_exp_cp["Ratio"]
-# ratio_exp_cp["sRatio"] = C * ratio_exp_cp["sRatio"]
-
-# plot_sim_exp_ratio(ratio_exp_cp, ax0)
-# plot_predicted_ratio(ratio_pred, ax0)
-
-# # ax0.set_yscale("log")
-# ax0.set_ylabel("ratio")
-# ax1.set_ylabel(r"$\sigma$")
-# ax0.set_title(f"Simulated Experiment. Counts per isotope: 10^4")
-# ax0.legend()
-
-# ax0.set_ylabel("ratio")
-# ax1.set_xlabel("Set Field (T)")
-# ax1.set_ylim(-2,2)
-
-
-# ax1.plot(
-#     ratio_pred.index,
-#     (ratio_exp_cp.Ratio - ratio_pred.Ratio) / ratio_exp_cp.sRatio,
-#     label=f"residuals",
-#     marker="o",
-#     ls="None",
-#     ms=6,
-#     color="tab:blue",
-# )
-# ax1.legend()
-
-# # Save and display the figure.
-# plt.savefig(fig_path, bbox_inches="tight", dpi=300)
-# plt.show()
+# Full Freq BW.
+freq_BW = np.array([18.1e9, 19.1e9])
+corrected_spectrum(
+    set_fields,
+    freq_BW,
+    freq_chunk=200e6,
+    corrections_off=False,
+    MC_label="simulated data (corrected)",
+)
+plt.show()

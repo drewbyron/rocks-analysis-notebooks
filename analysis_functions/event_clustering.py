@@ -50,12 +50,12 @@ def cluster_events(events, clust_params={}, slew_cycle=35e-3):
     """Notes:
     * This is really clustering events not track segments.
     * Default up to 1/24/23 was .003 up to now.
-    * On 1/24/23 1600, Drew is testing how .005 performs.
+    * 1/24/23 1600, Drew is testing how .005 performs.
+    * 4/14/23 1600, Heather and Drew working on reassigning more physical epss. 
     """
 
     events_copy = events.copy()
     events_copy["event_label"] = np.NaN
-    events_copy["too_long_to_clust"] = False
 
     for i, (name, group) in enumerate(events_copy.groupby(["run_id", "file_id"])):
 
@@ -69,31 +69,13 @@ def cluster_events(events, clust_params={}, slew_cycle=35e-3):
             eps=clust_params[set_field]["eps"],
             min_samples=1,
         )
-
-        # Veto events that have been reconstructed as being 10% longer than the slew_cycle
-        # length.
-        new_event_starts = (
-            events_copy.loc[condition, :]
-            .groupby(["run_id", "file_id", "event_label"])["EventStartTime"]
-            .transform("min")
-        )
-        new_event_ends = (
-            events_copy.loc[condition, :]
-            .groupby(["run_id", "file_id", "event_label"])["EventEndTime"]
-            .transform("max")
-        )
-        new_event_lens = new_event_ends - new_event_starts
-
-        # Arbitrarily choosing 10% here.
-        veto_cond = new_event_lens > slew_cycle * 1.1
-        events_copy.loc[(veto_cond & condition), "too_long_to_clust"] = True
-        
-        if veto_cond.sum(): 
-            print("LENGTH veto!", new_event_lens[veto_cond == True])
-
     events_copy["EventID"] = events_copy["event_label"] + 1
-    print("Num that shouldn't be clustered: ", events_copy["too_long_to_clust"].sum())
+
     return events_copy
+
+
+
+
 
 
 def dbscan_clustering(df, features: list, eps: float, min_samples: int):
@@ -112,6 +94,7 @@ def dbscan_clustering(df, features: list, eps: float, min_samples: int):
 def update_event_info(events_in: pd.DataFrame) -> pd.DataFrame:
 
     events = events_in.copy()
+    events = events.loc[:, ~events.columns.duplicated()]
 
     events["EventStartTime"] = events.groupby(["run_id", "file_id", "EventID"])[
         "EventStartTime"
@@ -195,6 +178,7 @@ def build_events(events: pd.DataFrame) -> pd.DataFrame:
         "set_field",
         "monitor_rate",
     ]
+
     events = (
         events.groupby(["run_id", "file_id", "EventID"])
         .first()
@@ -202,3 +186,50 @@ def build_events(events: pd.DataFrame) -> pd.DataFrame:
     )
 
     return events
+
+
+# Here is Drew's attempt to deal with too-long clustered tracks. Turned out not to be trivial.
+
+    # for i, (name, group) in enumerate(events_copy.groupby(["run_id", "file_id"])):
+
+    #     set_field = group.set_field.mean()
+
+    #     condition = (events_copy.run_id == name[0]) & (events_copy.file_id == name[1])
+
+    #     events_copy.loc[condition, "event_label"] = dbscan_clustering(
+    #         events_copy[condition],
+    #         features=clust_params[set_field]["features"],
+    #         eps=clust_params[set_field]["eps"],
+    #         min_samples=1,
+    #     )
+
+    #     # Veto events that have been reconstructed as being 10% longer than the slew_cycle
+    #     # length.
+    #     new_event_starts = (
+    #         events_copy.loc[condition, :]
+    #         .groupby(["run_id", "file_id", "event_label"])["EventStartTime"]
+    #         .transform("min")
+    #     )
+    #     new_event_ends = (
+    #         events_copy.loc[condition, :]
+    #         .groupby(["run_id", "file_id", "event_label"])["EventEndTime"]
+    #         .transform("max")
+    #     )
+    #     new_event_lens = new_event_ends - new_event_starts
+
+    #     # Arbitrarily choosing 10% here.
+    #     veto_cond = new_event_lens > slew_cycle * 1.1
+    #     events_copy.loc[(veto_cond & condition), "too_long_to_clust"] = True
+
+    #     if veto_cond.sum():
+    #         print("LENGTH veto!", new_event_lens[veto_cond == True])
+
+    # cond = events_copy["too_long_to_clust"] != 0
+    # # print(events_copy[cond].loc["EventID", "event_label", "too_long_to_clust"])
+
+    # events_copy["EventID"] = events_copy["event_label"] + 1
+
+    # cond = events_copy["too_long_to_clust"] != 0
+    # print(events_copy.loc[cond, ["run_id", "file_id","EventID", "event_label", "too_long_to_clust"]])
+    # print("Num that shouldn't be clustered: ", events_copy["too_long_to_clust"].sum())
+    # return events_copy

@@ -26,12 +26,9 @@ import analysis_functions.plotting_methods as pm
 def wall_efficiency(gamma, field, trap_radius=0.578e-2):
 
     energy = sc.energy(gamma)
-    # print(energy)
     r = sc.cyc_radius(sc.energy(gamma), field, pitch_angle=90)
-    # print(r)
     e = (trap_radius - r) ** 2 / trap_radius**2
-    # print(field)
-    # print(e)
+
     return e
 
 
@@ -140,7 +137,6 @@ def we_simple_MC(
     ratio_pred = AUC_expectation_we(
         set_fields, freq_BWs, b=b, plot=False, wall_effect=wall_effect
     )
-    print("r_pred", ratio_pred)
     # Simulate data that provides the "spectra" df for both ne and he.
     spectra_ne_exp = pd.DataFrame()
     spectra_he_exp = pd.DataFrame()
