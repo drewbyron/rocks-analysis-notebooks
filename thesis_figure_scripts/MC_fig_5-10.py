@@ -43,7 +43,7 @@ plt.rcParams.update(params)
 
 # Set fig path.
 fig_dir = Path("/media/drew/T7 Shield/thesis_figures/monte_carlo")
-fig_base_name = "MC_wall_effect_"
+fig_base_name = "MC_we_"
 fig_suffix = ".png"
 
 # Utility function.
@@ -85,9 +85,9 @@ def plots1_2_3(set_fields, freq_BW, b=0):
     delta_W = 10**-10
 
     pdf_plot_pts = 10**2
-    f0, ax0 = plt.subplots(1, figsize=(10, 5))
-    f1, ax1 = plt.subplots(1, figsize=(10, 6))
-    f2, ax2 = plt.subplots(1, figsize=(10, 6))
+    f0, ax0 = plt.subplots(1, figsize=(12, 6))
+    f1, ax1 = plt.subplots(1, figsize=(12, 6))
+    f2, ax2 = plt.subplots(1, figsize=(12, 6))
 
     for j, (isotope_name, isotope_info) in enumerate(isotopes.items()):
 
@@ -138,7 +138,7 @@ def plots1_2_3(set_fields, freq_BW, b=0):
             ax2.set_xlabel(r"$\gamma$")
 
             ax1.set_ylabel(r"$r_{cycl}$ (mm)")
-            ax2.set_ylabel(r"Efficiency ($\epsilon_{e}(E)_{WE}$)")
+            ax2.set_ylabel(r"Efficiency ($\epsilon_{e}(E)_{we}$)")
 
     # Save the figures to disk.
     f0_path = fig_dir / Path(fig_base_name + "0" + fig_suffix)
@@ -155,7 +155,7 @@ def plots1_2_3(set_fields, freq_BW, b=0):
 
 def wall_effect_correction(set_fields, freq_BW, freq_chunk=1.1e9):
     print(f"Wall effect correction to ratio.")
-    f3, ax3 = plt.subplots(1, figsize=(10, 6))
+    f3, ax3 = plt.subplots(1, figsize=(10, 5))
 
     freq_BW_tot = freq_BW[1] - freq_BW[0]
     n_chunks = int(np.ceil((freq_BW_tot / freq_chunk)))
@@ -189,7 +189,7 @@ def wall_effect_correction(set_fields, freq_BW, freq_chunk=1.1e9):
 
     ax3.set_yscale("log")
     ax3.set_xlabel(r"Field (T)")
-    ax3.set_ylabel(r"$abs\left(\frac{R_{wall}}{R_0} - 1 \right)$ ")
+    ax3.set_ylabel(r"$abs\left(\frac{R_{we}}{R_0} - 1 \right)$ ")
     ax3.legend(loc="lower right")
 
     f3_path = fig_dir / Path(fig_base_name + f"ratio_n_chunks_{n_chunks}" + fig_suffix)
@@ -210,7 +210,7 @@ def corrected_spectrum(
     C_exp = 0.75
     b = 0
 
-    N_per_isotope = 10**6
+    N_per_isotope = 10**5
     mon_rate = 10**14
 
     freq_BW_tot = freq_BW[1] - freq_BW[0]
@@ -218,7 +218,7 @@ def corrected_spectrum(
     print(f"n_chunks: {n_chunks}")
 
     f4, (ax0, ax1) = plt.subplots(
-        2, 1, gridspec_kw={"height_ratios": [3, 1]}, figsize=(12, 9)
+        2, 1, gridspec_kw={"height_ratios": [3, 1]}, figsize=(12, 7.5)
     )
 
     b_fits = []
@@ -275,7 +275,7 @@ def corrected_spectrum(
         ratio_corr["sNe19_corr"] = C * ratio_pred["He6"] * ratio_exp["sRatio"]
 
         if corrections_off:
-            print("experiment:", spectra_ne_we)
+            # Here we are just showing how bad the fit would be without the corrections.
             ratio_corr["Ne19_corr"] = (
                 spectra_ne_we["event_count"]
                 * ratio_corr["Ne19_corr"].mean()
@@ -316,8 +316,8 @@ def corrected_spectrum(
 
     b_fit = np.average(b_fits, weights=b_errs)
     b_err = np.sqrt(np.sum(b_errs**2))
-    print(b_fits)
-    print(b_errs)
+    # print(b_fits)
+    # print(b_errs)
     print(f"\n\nFinal Result: b = {b_fit}+- {b_err}")
     # NOw use the b we got from the fit in making the spectrum?? THINK ABOUT THAT.
     isotopes = {"Ne19": {"b": -0.7204 * b}, "He6": {"b": b}}
@@ -353,7 +353,7 @@ def corrected_spectrum(
 set_fields = np.arange(0.75, 3.5, 0.25)
 
 # Full Freq BW.
-freq_BW = np.array([18.0e9, 19.1e9])
+freq_BW = np.array([18.1e9, 19.1e9])
 
 # Make basic first three plots illustrating the size of the effect.
 plots1_2_3(set_fields, freq_BW)
@@ -393,7 +393,23 @@ freq_BW = np.array([18.1e9, 19.1e9])
 corrected_spectrum(
     set_fields,
     freq_BW,
+    freq_chunk=500e6,
+    corrections_off=False,
+    MC_label="simulated data (corrected)",
+)
+
+corrected_spectrum(
+    set_fields,
+    freq_BW,
     freq_chunk=200e6,
+    corrections_off=False,
+    MC_label="simulated data (corrected)",
+)
+
+corrected_spectrum(
+    set_fields,
+    freq_BW,
+    freq_chunk=100e6,
     corrections_off=False,
     MC_label="simulated data (corrected)",
 )

@@ -72,7 +72,7 @@ def energy_domain_plot(
         # ax0.bar(gamma_acceptances[:,0], SM_heights.values, width=gamma_widths, align = 'edge', edgecolor='black', color='none', label = "SM",linewidth = .1)
 
         ax1.plot(
-            (gamma_acceptances[:, 0] + gamma_widths/2),
+            (gamma_acceptances[:, 0] + gamma_widths / 2),
             (ratio_corr["Ne19_corr"] - ratio_pred["Ne19"]) / ratio_corr["sNe19_corr"],
             label=f"residuals",
             marker="o",
@@ -90,11 +90,8 @@ def energy_domain_plot(
             align="edge",
         )
 
-        # ax0.bar(gamma_acceptances[:,0], SM_heights.values, width=gamma_widths, align = 'edge', edgecolor='black', color='none',linewidth = .1)
-        print((gamma_acceptances[:, 0]))
-        print((gamma_acceptances[:, 0] + gamma_widths/2))
         ax1.plot(
-            (gamma_acceptances[:, 0] + gamma_widths/2),
+            (gamma_acceptances[:, 0] + gamma_widths / 2),
             (ratio_corr["Ne19_corr"] - ratio_pred["Ne19"]) / ratio_corr["sNe19_corr"],
             marker="o",
             ls="None",
@@ -108,7 +105,7 @@ def energy_domain_plot(
     # ax0.set_title("Ne19 Corrected Spectra")
     # ax0.set_xlabel(r"$\gamma$")
     ax1.set_xlabel(r"$\gamma$")
-    ax0.set_ylabel(r"$\frac{dN}{dE}$")
+    ax0.set_ylabel(r"$\frac{dN}{d\gamma}$")
     ax1.set_ylabel(r"$\sigma$")
 
     return None
