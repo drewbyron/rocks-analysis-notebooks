@@ -1,6 +1,14 @@
 # Author: Drew Byron
 # Date: 04/07/2023
+"""
+Description: This module makes a ratio plot that aggregates the results
+and errors of the SNR study. Here we use the "from-below" (fb)
+monte carlo, so we don't attempt to cut events coming from below. We
+fit to all three free parameters (C, slew_time, b). Alternatively we 
+could fix one or more of those parameters by changing the vary argument 
+of the lmfit parameter object to false.
 
+"""
 # Imports.
 import sys
 import numpy as np
@@ -44,10 +52,10 @@ import thesis_figure_scripts.data_loaders as dl
 # Set plot parameters.
 params = {
     "axes.titlesize": 15,
-    "legend.fontsize": 12,
-    "axes.labelsize": 12,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12,
+    "legend.fontsize": 14,
+    "axes.labelsize": 14,
+    "xtick.labelsize": 14,
+    "ytick.labelsize": 14,
 }
 plt.rcParams.update(params)
 
@@ -78,52 +86,47 @@ def make_fb_combined_snr_test_plot(snr_study, fig_path):
     normed_cols = ["mMeanSNR", "EventTimeLength", "uniform_rand", "detectability"]
 
     snrs = np.array([8, 9, 10, 11])
-    # snr_study_results = snr_tests.process_snr_study(
-    #     snr_study, event_cuts, snrs, normed_cols=normed_cols
-    # )
 
+    # This function combines the SNR study results into one array (with errors)
     ratio_exp_combined = snr_tests.combine_ratios(
         snr_study, event_cuts, snrs, normed_cols=normed_cols
     )
-    # display(ratio_exp_combined)
 
-    # ne_counts = []
-    # he_counts = []
-    # count_ratios = []
     # Set the fields to use and the BW to use.
     set_fields = np.arange(1.25, 3.5, 0.25)
     freq_BW = np.array([18.0e9, 19.0e9])
     freq_BWs = np.tile(freq_BW, (len(set_fields), 1))
 
-    # for snr in snrs:
-
     # Grab the experimental ratio for this cut, only take fields we are looking at.
     ratio_exp = ratio_exp_combined
     ratio_exp = ratio_exp.loc[ratio_exp.index.isin(set_fields), :]
-    print(ratio_exp)
+
     #  Define the fit params.
     my_pars = Parameters()
-    my_pars.add("C", value=0.32322636, min=0.31, max=0.34, vary=False, brute_step=0.01)
+    my_pars.add("C", value=0.32322636, min=0.31, max=0.34, vary=True, brute_step=0.01)
     my_pars.add(
         "slew_time",
         value=0.03948916,
         min=0.035,
         max=0.042,
-        vary=False,
+        vary=True,
         brute_step=0.0005,
     )
-    # my_pars.add('slew_time', value=0.035, min=.035, max = .042, vary = True, brute_step=0.0005)
-    my_pars.add("b", value=0, min=-0.1, max=0.1, vary=False, brute_step=0.01)
+
+    my_pars.add("b", value=0, min=-0.1, max=0.1, vary=True)
 
     # Run the fit.
+    # Use the below to do a brute fit. 
     # result = minimize(fb.objfunc_chisq_slewfree, my_pars, args = (ratio_exp, set_fields, freq_BW),method = 'brute')
+    # Once you've roughly found the absolute max with brute use the below. 
     result = minimize(
         fb.objfunc_chisq_slewfree,
         my_pars,
         args=(ratio_exp, set_fields, freq_BW),
         method="leastsq",
-        epsfcn=1e-3,
+        epsfcn=1e-2,
     )
+    
     # Print fit results
     print(f"reduced chisq: {result.redchi}")
     print(fit_report(result.params))
@@ -143,58 +146,63 @@ def make_fb_combined_snr_test_plot(snr_study, fig_path):
     )
     ratio_exp.loc[:, "Ratio"] = C * ratio_exp.loc[:, "Ratio"]
     ratio_exp.loc[:, "sRatio"] = C * ratio_exp.loc[:, "sRatio"]
-    plt.rcParams.update({"font.size": 15})
+
     f, (ax0, ax1) = plt.subplots(
         2, 1, gridspec_kw={"height_ratios": [3, 1]}, figsize=(12, 8)
     )
 
     # Plot the experimental ratio.
-    pm.plot_experimental_ratio(ratio_exp, ax0, label=f"data")
+    ax0.errorbar(
+        ratio_exp.index,
+        ratio_exp.Ratio,
+        yerr=ratio_exp["sRatio"],
+        label = "Data", 
+        marker="o",
+        ls="None",
+        ms=4,
+        alpha=1,
+        color="black",
+    )
 
-    # Plot the predicted ratio (but only once).
-    # if snr == 9:
     ax0.plot(
         ratio_pred_b0.index,
         ratio_pred_b0.Ratio,
-        color="tab:orange",
-        label="predicted (b=0)",
-        marker="o",
-        ms=6,
-        linestyle="solid",
+        label=r"Predicted" "\n" r"($b=0$)",
+        color="#1f77b4",
+        alpha=1,
     )
     ax0.plot(
         ratio_pred_b1p.index,
         ratio_pred_b1p.Ratio,
-        color="tab:green",
-        label=r"predicted (b=$\pm$1)",
-        marker="o",
-        ms=6,
-        linestyle="dashed",
+        label=r"Predicted" "\n" r"($b=\pm1$)",
+        color="green",
+        linestyle="--",
+        alpha=0.8,
     )
+
     ax0.plot(
         ratio_pred_b1n.index,
         ratio_pred_b1n.Ratio,
-        color="tab:green",
-        marker="o",
-        ms=6,
-        linestyle="dashed",
+        color="green",
+        linestyle="--",
+        alpha=0.8,
     )
 
     ax1.plot(
         ratio_pred_b0.index,
         (ratio_exp.Ratio - ratio_pred_b0.Ratio) / ratio_exp.sRatio,
-        label=f"residuals",
         marker="o",
         ls="None",
-        color="tab:blue",
         ms=6,
+        color="black",
     )
 
-    ax0.set_ylabel("ratio")
-    ax1.set_xlabel("Set Field (T)")
-    ax0.set_title(f"Ratio Measurement (including from below)")
+    ax0.set_ylabel("$N(^{19}$Ne$)/N(^{6}$He$)$")
+    ax1.set_xlabel("Field (T)")
+    ax1.set_ylabel(r"Residuals ($\sigma$)")
+
     ax0.legend()
-    ax1.legend()
+
     ax0.set_ylim(0, 3.5)
     ax1.set_ylim(-2.5, 2.5)
 
@@ -204,12 +212,9 @@ def make_fb_combined_snr_test_plot(snr_study, fig_path):
     return None
 
 
-# plt.show()
-
-
 # Set fig path.
 fig_dir = Path("/media/drew/T7 Shield/thesis_figures/measurements")
-fig_name = Path("MC_fig_1_fb_combined_snr_test.png")
+fig_name = Path("MEAS_fig_1_fb_combined_snr_test.png")
 fig_path = fig_dir / fig_name
 
 snr_study = dl.load_snr_study()

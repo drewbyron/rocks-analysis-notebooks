@@ -81,7 +81,7 @@ def make_energy_domain_plot(snr_study, spec_cuts, fig_path):
     freq_chunk = 400e6
     n_chunks = int(np.ceil((freq_BW_tot / freq_chunk)))
     # MAKE THIS AN INPUT
-    n_chunks = 2
+    n_chunks = 1
 
     b_fits = []
     b_errs = []
@@ -141,7 +141,11 @@ def make_energy_domain_plot(snr_study, spec_cuts, fig_path):
         my_pars.add("b", value=0, min=-10, max=10, vary=False)
 
         result = minimize(
-            we.objfunc_chisq, my_pars, args=(freq_BWs, set_fields, ratio_exp)
+            we.objfunc_chisq,
+            my_pars,
+            args=(freq_BWs, set_fields, ratio_exp),
+            method="leastsq",
+            epsfcn=8e-2,
         )
 
         # Fit report.
@@ -229,7 +233,6 @@ def make_energy_domain_plot(snr_study, spec_cuts, fig_path):
     # Save and display the figure.
     f.savefig(fig_path, bbox_inches="tight", dpi=300)
 
-
     return None
 
 
@@ -265,7 +268,7 @@ event_cuts = {
 snr_study = dl.load_snr_study()
 
 snr_cuts = [0.5]
-start_freqs = [300]
+start_freqs = [200]
 
 # Make all possible pairs of the above cuts:
 specific_cuts = np.array(np.meshgrid(snr_cuts, start_freqs)).T.reshape(-1, 2)

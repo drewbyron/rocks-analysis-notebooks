@@ -120,7 +120,7 @@ def plots1_2_3(set_fields, freq_BW, b=0):
                 ax0.fill_between(W, 0, p, alpha=0.5, color=colors[isotope_name])
         ax0.legend()
         ax0.set_xlabel(r"$\gamma$")
-        ax0.set_ylabel(r"$\frac{dN}{dE}$")
+        ax0.set_ylabel(r"$\frac{dN}{d\gamma}$")
 
         if j == 0:
             rs = sc.cyc_radius(sc.energy(Ws), set_fields, pitch_angle=90)

@@ -18,6 +18,7 @@ def plot_experimental_ratio(ratio_exp, ax, label=None):
         label=label,
         marker="o",
         ms=4,
+        ls="None",
     )
 
     return None

@@ -1,5 +1,12 @@
 # Author: Drew Byron
 # Date: 04/07/2023
+"""
+Description: This module makes a ratio plot including each of the four 
+SNRs (8,9,10,11) individually. This is used to justify the systematic 
+error we assign to the measured ratio. Here we use the "from-below" (fb)
+monte carlo, so we don't attempt to cut events coming from below. 
+
+"""
 
 # Imports.
 import sys
@@ -44,11 +51,12 @@ import thesis_figure_scripts.data_loaders as dl
 # Set plot parameters.
 params = {
     "axes.titlesize": 15,
-    "legend.fontsize": 12,
-    "axes.labelsize": 12,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12,
+    "legend.fontsize": 14,
+    "axes.labelsize": 14,
+    "xtick.labelsize": 14,
+    "ytick.labelsize": 14,
 }
+
 plt.rcParams.update(params)
 
 
@@ -84,18 +92,19 @@ def make_fb_full_snr_test_plot(snr_study, fig_path):
 
     plt.rcParams.update({"font.size": 15})
     f, (ax0, ax1) = plt.subplots(
-        2, 1, gridspec_kw={"height_ratios": [3, 1]}, figsize=(12, 8)
+        2, 1, gridspec_kw={"height_ratios": [2.2, 1]}, figsize=(12, 7)
     )
 
     ne_counts = []
     he_counts = []
     count_ratios = []
+
     # Set the fields to use and the BW to use.
     set_fields = np.arange(1.25, 3.5, 0.25)
     freq_BW = np.array([18.0e9, 19.1e9])
     freq_BWs = np.tile(freq_BW, (len(set_fields), 1))
 
-    for snr in snrs:
+    for i, snr in enumerate(snrs):
 
         # Grab the experimental ratio for this cut, only take fields we are looking at.
         ratio_exp = snr_study_results["ratio"][snr]
@@ -130,18 +139,26 @@ def make_fb_full_snr_test_plot(snr_study, fig_path):
         ratio_exp["Ratio"] = C * ratio_exp.copy()["Ratio"]
         ratio_exp["sRatio"] = C * ratio_exp.copy()["sRatio"]
 
-        # Plot the experimental ratio.
-        pm.plot_experimental_ratio(ratio_exp, ax0, label=f"SNR cut: {snr}")
+        colors = ["y", "m", "c", "r", "g"]
 
+        ax0.errorbar(
+            ratio_exp.index,
+            ratio_exp.Ratio,
+            yerr=ratio_exp["sRatio"],
+            label=f"SNR cut: {snr}",
+            marker="o",
+            ms=4,
+            ls="None",
+            color=colors[i],
+        )
         # Plot the predicted ratio (but only once).
         if snr == 9:
             ax0.plot(
                 ratio_pred.index,
                 ratio_pred.Ratio,
-                color="g",
-                label="ratio pred (from below)",
-                marker="o",
-                ms=6,
+                label=r"Predicted" "\n" r"($b=0$)",
+                color="#1f77b4",
+                alpha=1,
             )
 
         ne_counts.append(
@@ -157,39 +174,43 @@ def make_fb_full_snr_test_plot(snr_study, fig_path):
             ).round(3)
         )
 
+        # Residuals, no labels.
         ax1.plot(
             ratio_pred.index,
             (ratio_exp.Ratio - ratio_pred.Ratio) / ratio_exp.sRatio,
-            label=f"snr cut: {snr}",
             marker="o",
             ls="None",
-            ms=6,
+            ms=5,
+            color=colors[i],
         )
 
     # ax0.set_yscale("log")
-    ax0.set_ylabel("ratio")
+    ax0.set_ylabel("$N(^{19}$Ne$)/N(^{6}$He$)$")
+    ax1.set_ylabel(r"Residuals ($\sigma$)")
     ax1.set_xlabel("Field (T)")
-    ax0.set_title(
-        f"C = {C:.2f}., Ne_counts:{ne_counts} k, He_counts:{he_counts} k, count ratio: {count_ratios}"
-    )
+
     ax0.legend()
-    ax1.legend()
 
     # Save and display the figure.
     f.savefig(fig_path, bbox_inches="tight", dpi=300)
 
+    print(f"\nne_counts = {ne_counts}\n")
+    print(f"he_counts ={he_counts}\n")
+    print(f"ratio = {count_ratios}\n")
+
     return None
 
-
-plt.show()
-
+# =======================================
+# Run the above functions to make the plot. 
 
 # Set fig path.
 fig_dir = Path("/media/drew/T7 Shield/thesis_figures/measurements")
-fig_name = Path("MC_fig_0_fb_full_snr_test.png")
+fig_name = Path("MEAS_fig_0_fb_full_snr_test.png")
 fig_path = fig_dir / fig_name
 
 snr_study = dl.load_snr_study()
 make_fb_full_snr_test_plot(snr_study, fig_path)
 
 plt.show()
+
+# End of file. 
