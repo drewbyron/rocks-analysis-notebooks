@@ -56,7 +56,7 @@ def energy_domain_plot(
     ratio_corr,
     ratio_pred,
     label=True,
-    label_contents="data (corrected)",
+    label_contents="$^{19}$Ne CRES data \n (corrected)",
 ):
     if label:
         ax0.bar(
@@ -99,13 +99,12 @@ def energy_domain_plot(
             ms=4,
         )
 
-    ax1.axhline(y=0, color="b", linestyle="-")
+    ax1.axhline(y=0, color="#1f77b4", linestyle="-")
 
     # Make plot labels and titles.
-    # ax0.set_title("Ne19 Corrected Spectra")
-    # ax0.set_xlabel(r"$\gamma$")
-    ax1.set_xlabel(r"$\gamma$")
     ax0.set_ylabel(r"$\frac{dN}{d\gamma}$")
-    ax1.set_ylabel(r"$\sigma$")
+
+    ax1.set_xlabel(r"$\gamma$")
+    ax1.set_ylabel(r"Residuals ($\sigma$)")
 
     return None

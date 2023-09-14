@@ -44,23 +44,21 @@ import thesis_figure_scripts.data_loaders as dl
 # Set plot parameters.
 params = {
     "axes.titlesize": 15,
-    "legend.fontsize": 12,
-    "axes.labelsize": 12,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12,
+    "legend.fontsize": 14,
+    "axes.labelsize": 14,
+    "xtick.labelsize": 14,
+    "ytick.labelsize": 14,
 }
 plt.rcParams.update(params)
 
 
-def make_energy_domain_plot(snr_study, spec_cuts, fig_path):
-
-    # Plot results.
-    f, (ax0, ax1, ax2) = plt.subplots(
-        3, 1, gridspec_kw={"height_ratios": [3, 0.75, 1.25]}, figsize=(18, 10)
+def make_energy_domain_plot(snr_study, spec_cuts, freq_chunk, fig_path):
+    
+    f, (ax0, ax1) = plt.subplots(
+        2, 1, gridspec_kw={"height_ratios": [3, 1]}, figsize=(12, 7)
     )
 
     set_fields = np.arange(1.25, 3.5, 0.25)
-    # snr_cuts = [9]
     mixer_freq = 17.9e9
     b = 0
 
@@ -74,14 +72,10 @@ def make_energy_domain_plot(snr_study, spec_cuts, fig_path):
     Ws = np.linspace(1.001, bspec.W0 - 0.001, 300)
     pdf = bspec.dNdE(Ws)
 
-    # for (freq1, freq2) in zip(np.arange(100,1100, 100),np.arange(300,1300, 100)):
-
-    freq_BW_full = np.array([18.2e9, 19.1e9])
+    freq_BW_full = np.array([18.1e9, 19.1e9])
     freq_BW_tot = freq_BW_full[1] - freq_BW_full[0]
-    freq_chunk = 400e6
+
     n_chunks = int(np.ceil((freq_BW_tot / freq_chunk)))
-    # MAKE THIS AN INPUT
-    n_chunks = 1
 
     b_fits = []
     b_errs = []
@@ -110,15 +104,10 @@ def make_energy_domain_plot(snr_study, spec_cuts, fig_path):
             "EventStartFreq": (freq_BW[0] - mixer_freq, freq_BW[1] - mixer_freq)
         }
         tot_cuts = {**spec_cuts, **chunk_cuts}
-        print(tot_cuts)
 
         ratio_exp_combined = snr_tests.combine_ratios(
             snr_study, tot_cuts, snrs, normed_cols=normed_cols
         )
-        # ne_counts = []
-        # he_counts = []
-
-        # for cut in snr_cuts:
 
         ratio_exp = ratio_exp_combined
 
@@ -131,7 +120,6 @@ def make_energy_domain_plot(snr_study, spec_cuts, fig_path):
         )
         print(freq_BW)
         freq_BWs = np.tile(freq_BW, (len(set_fields), 1))
-        # print(freq_BWs)
 
         ratio_exp = ratio_exp[ratio_exp.index.isin(set_fields)]
 
@@ -145,21 +133,17 @@ def make_energy_domain_plot(snr_study, spec_cuts, fig_path):
             my_pars,
             args=(freq_BWs, set_fields, ratio_exp),
             method="leastsq",
-            epsfcn=8e-2,
+            epsfcn=1e-1,
         )
 
-        # Fit report.
+        # Print fit results
+        print(f"reduced chisq: {result.redchi}")
         print(fit_report(result.params))
 
         red_chi.append(result.redchi)
 
         C = result.params["C"].value
         b = result.params["b"].value
-
-        # ne_counts = (snr_study_spectra["ne"][cut].event_count.sum() / 1000).round(2)
-        # he_counts = (snr_study_spectra["he"][cut].event_count.sum() / 1000).round(2)
-        # tot_counts = ne_counts + he_counts
-        # count_ratio = np.array(ne_counts) / np.array(he_counts)
 
         # Get the SM prediction.
         ratio_pred = we.AUC_expectation_we(
@@ -197,36 +181,16 @@ def make_energy_domain_plot(snr_study, spec_cuts, fig_path):
         b_fits.append(result.params["b"].value)
         b_errs.append(result.params["b"].stderr)
 
-        # fig, ax = plt.subplots(figsize=(12,6))
-        # Plot the experimental ratio.
-        ax2.errorbar(
-            ratio_corr.index,
-            C * ratio_corr.Ratio,
-            yerr=C * ratio_corr.sRatio,
-            label=f"comb",
-            marker="o",
-            ls="None",
-            ms=4,
-            alpha=1,
-            color="b",
-        )
-
-        ax2.plot(
-            ratio_pred.index, ratio_pred.Ratio, label="predicted", color="b", alpha=0.5
-        )
-        # print(
-        #     f"C = {C:.2f}., Ne_counts:{ne_counts:.3f} k, He_counts:{he_counts:.3f} k, Tot: {tot_counts:.3f} k, count ratio: {count_ratio:.3f}"
-        # )
     print("reduced chisq's: ", red_chi)
-    ax0.plot(Ws, pdf, label="pdf")
-    ax2.set_ylabel("ratio")
-    ax2.set_xlabel("set field (T)")
-    # ax2.set_title(
-    #     f"C = {C:.2f}., Ne_counts:{ne_counts:.3f} k, He_counts:{he_counts:.3f} k, Tot: {tot_counts:.3f} k, count ratio: {count_ratio:.3f}"
-    # )
-    ax0.legend()
-    ax1.legend()
+    ax0.plot(
+        Ws,
+        pdf,
+        label="pdf",
+        color="#1f77b4",
+        alpha=1,
+    )
 
+    ax0.legend()
     ax0.set_xlim(1.5, 5.5)
     ax1.set_xlim(1.5, 5.5)
 
@@ -236,12 +200,9 @@ def make_energy_domain_plot(snr_study, spec_cuts, fig_path):
     return None
 
 
-# plt.show()
-
-
 # Set fig path.
 fig_dir = Path("/media/drew/T7 Shield/thesis_figures/measurements")
-fig_base_name = "MC_fig_3_"
+fig_base_name = "MEAS_fig_3_"
 fig_suffix = ".png"
 
 event_cuts = {
@@ -269,12 +230,16 @@ snr_study = dl.load_snr_study()
 
 snr_cuts = [0.5]
 start_freqs = [200]
+freq_chunks = [500e6, 1000e6]
+
 
 # Make all possible pairs of the above cuts:
-specific_cuts = np.array(np.meshgrid(snr_cuts, start_freqs)).T.reshape(-1, 2)
+specific_cuts = np.array(np.meshgrid(snr_cuts, start_freqs, freq_chunks)).T.reshape(
+    -1, 3
+)
 print(specific_cuts)
 
-for snr_cut, start_freq in specific_cuts:
+for snr_cut, start_freq, freq_chunk in specific_cuts:
 
     freq_cut = {
         "EventStartFreq": ((start_freq) * 1e6, (1200) * 1e6),
@@ -284,10 +249,12 @@ for snr_cut, start_freq in specific_cuts:
     spec_cuts = {**event_cuts, **freq_cut}
 
     fig_path = fig_dir / Path(
-        fig_base_name + f"ed_freq_{snr_cut}_snr_{start_freq}" + fig_suffix
+        fig_base_name
+        + f"ed_freq_{snr_cut}_snr_{start_freq}_chunk_{freq_chunk/1e6}"
+        + fig_suffix
     )
 
-    make_energy_domain_plot(snr_study, spec_cuts, fig_path)
+    make_energy_domain_plot(snr_study, spec_cuts, freq_chunk, fig_path)
 
 
 plt.show()

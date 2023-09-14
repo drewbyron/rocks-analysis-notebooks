@@ -57,8 +57,7 @@ def combine_ratios(snr_study, event_cuts, snrs, normed_cols):
     snr_study_results = process_snr_study(
         snr_study, event_cuts, snrs, normed_cols=normed_cols
     )
-    # snr_study_results = snr_tests.process_snr_study(snr_study, event_cuts,snrs, normed_cols=normed_cols)
-    print(snr_study_results["ratio"][9])
+
     # print(snr_study_results["ratio"][9])
 
     Ratio_all = np.array([snr_study_results["ratio"][snr]["Ratio"] for snr in snrs])

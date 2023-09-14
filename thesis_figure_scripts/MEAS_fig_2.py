@@ -1,6 +1,12 @@
 # Author: Drew Byron
 # Date: 04/07/2023
+"""
+Description: This module makes a ratio plot(s) that aggregates the results
+and errors of the SNR study. Here we attempt to cut all events born
+below the visible bandwidth and then we use the naive Monte Carlo that 
+just looks at the ratio of the spectral densities (Ne/He). 
 
+"""
 # Imports.
 import sys
 import numpy as np
@@ -44,16 +50,19 @@ import thesis_figure_scripts.data_loaders as dl
 # Set plot parameters.
 params = {
     "axes.titlesize": 15,
-    "legend.fontsize": 12,
-    "axes.labelsize": 12,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12,
+    "legend.fontsize": 14,
+    "axes.labelsize": 14,
+    "xtick.labelsize": 14,
+    "ytick.labelsize": 14,
 }
 plt.rcParams.update(params)
 
 
 def make_snr_test_ratio_plot(snr_study, spec_cuts, fig_path):
-
+    """
+    This function makes a ratio plot for each ratio obtained in the SNR
+    study (8,9,10,11).
+    """
     set_fields = np.arange(1.25, 3.5, 0.25)
     freq_BW = np.array([18.0e9, 19.1e9])
     freq_BWs = np.tile(freq_BW, (len(set_fields), 1))
@@ -65,16 +74,17 @@ def make_snr_test_ratio_plot(snr_study, spec_cuts, fig_path):
     )
 
     # Make the experimental ratio and fit to predicted.
-    # Make the experimental ratio and fit to predicted.
     f, (ax0, ax1) = plt.subplots(
-        2, 1, gridspec_kw={"height_ratios": [3, 1]}, figsize=(12, 8)
+        2, 1, gridspec_kw={"height_ratios": [2.5, 1]}, figsize=(12, 7)
     )
+    
     ne_counts = []
     he_counts = []
 
     for snr in snrs:
 
         ratio_exp = snr_study_results["ratio"][snr]
+
         # Make the predicted ratio.
         freq_BW = np.array(
             [
@@ -130,7 +140,9 @@ def make_snr_test_ratio_plot(snr_study, spec_cuts, fig_path):
             ms=6,
         )
 
-    # ax0.set_yscale("log")
+    print(f"\nne_counts = {ne_counts}\n")
+    print(f"he_counts = {he_counts}\n")
+
     ax0.set_ylabel("ratio")
     ax0.set_xlabel("Set Field (T)")
     ax0.set_title(
@@ -158,7 +170,7 @@ def make_snr_combined_ratio_plot(snr_study, spec_cuts, fig_path):
 
     # Make the experimental ratio and fit to predicted.
     f, (ax0, ax1) = plt.subplots(
-        2, 1, gridspec_kw={"height_ratios": [3, 1]}, figsize=(12, 8)
+        2, 1, gridspec_kw={"height_ratios": [2.5, 1]}, figsize=(12, 7)
     )
 
     # Make the predicted ratio.
@@ -181,45 +193,68 @@ def make_snr_combined_ratio_plot(snr_study, spec_cuts, fig_path):
 
     my_pars = Parameters()
     my_pars.add("C", value=1, min=0, max=10, vary=True)
-    my_pars.add("b", value=0, min=0, max=10, vary=False)
+    my_pars.add("b", value=0, min=-1, max=1, vary=False)
 
     # Fit to just C, leave b fixed.
     result = minimize(mc.objfunc_chisq, my_pars, args=(freq_BWs, set_fields, ratio_exp))
-    print(f"reduced chisq: {result.redchi}\n")
+
+    # Print fit results
+    print(f"reduced chisq: {result.redchi}")
+    print(fit_report(result.params))
+
     C = result.params["C"].value
     ratio_exp["Ratio"] = C * ratio_exp["Ratio"]
     ratio_exp["sRatio"] = C * ratio_exp["sRatio"]
 
-    pm.plot_experimental_ratio(ratio_exp, ax0, label=f"ratio exp (combined)")
+    # pm.plot_experimental_ratio(ratio_exp, ax0, label=f"ratio exp (combined)")
+
+    ax0.errorbar(
+        ratio_exp.index,
+        ratio_exp.Ratio,
+        yerr=ratio_exp["sRatio"],
+        label="Data",
+        marker="o",
+        ls="None",
+        ms=5,
+        alpha=1,
+        color="black",
+    )
 
     # Plot predicted ratio
-    pm.plot_predicted_ratio(ratio_pred, ax0)
+    ax0.plot(
+        ratio_pred.index,
+        ratio_pred.Ratio,
+        label=r"Predicted" "\n" r"($b=0$)",
+        color="#1f77b4",
+        alpha=1,
+    )
 
-    # ax0.set_yscale("log")
-    ax0.set_ylabel("ratio")
-    ax0.set_xlabel("Set Field (T)")
-    ax0.legend()
-
+    # Plot residuals
     ax1.plot(
         ratio_pred.index,
         (ratio_exp.Ratio - ratio_pred.Ratio) / ratio_exp.sRatio,
-        label=f"residuals",
         marker="o",
         ls="None",
         ms=6,
+        color="black",
     )
+
+    ax1.axhline(y=0, color="#1f77b4", linestyle="-")
+
+    ax0.legend()
+
+    ax0.set_ylabel("$N(^{19}$Ne$)/N(^{6}$He$)$")
+    ax1.set_xlabel("Field (T)")
+    ax1.set_ylabel(r"Residuals ($\sigma$)")
 
     f.savefig(fig_path, bbox_inches="tight", dpi=300)
 
     return None
 
 
-# plt.show()
-
-
 # Set fig path.
 fig_dir = Path("/media/drew/T7 Shield/thesis_figures/measurements")
-fig_base_name = "MC_fig_2_"
+fig_base_name = "MEAS_fig_2_"
 fig_suffix = ".png"
 
 event_cuts = {
@@ -241,12 +276,12 @@ event_cuts = {
     "mMeanSNR": (0, np.inf),
 }
 
-
 # Load the snr study.
 snr_study = dl.load_snr_study()
 
-snr_cuts = [-np.inf, 0.5]
-start_freqs = [200, 300]
+# Can add to these lists to generate more plots.
+snr_cuts = [-np.inf, .5]
+start_freqs = [200]
 
 # Make all possible pairs of the above cuts:
 specific_cuts = np.array(np.meshgrid(snr_cuts, start_freqs)).T.reshape(-1, 2)
@@ -267,8 +302,8 @@ for snr_cut, start_freq in specific_cuts:
         fig_base_name + f"combined_freq_{snr_cut}_snr_{start_freq}" + fig_suffix
     )
 
+    # Run the above functions to make the two desired plots.
     make_snr_test_ratio_plot(snr_study, spec_cuts, fig_path_full)
-
     make_snr_combined_ratio_plot(snr_study, spec_cuts, fig_path_combined)
 
 

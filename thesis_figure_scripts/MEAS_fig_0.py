@@ -90,9 +90,8 @@ def make_fb_full_snr_test_plot(snr_study, fig_path):
         snr_study, event_cuts, snrs, normed_cols=normed_cols
     )
 
-    plt.rcParams.update({"font.size": 15})
     f, (ax0, ax1) = plt.subplots(
-        2, 1, gridspec_kw={"height_ratios": [2.2, 1]}, figsize=(12, 7)
+        2, 1, gridspec_kw={"height_ratios": [2.5, 1]}, figsize=(12, 7)
     )
 
     ne_counts = []
@@ -183,6 +182,8 @@ def make_fb_full_snr_test_plot(snr_study, fig_path):
             ms=5,
             color=colors[i],
         )
+
+    ax1.axhline(y=0, color="#1f77b4", linestyle="-")
 
     # ax0.set_yscale("log")
     ax0.set_ylabel("$N(^{19}$Ne$)/N(^{6}$He$)$")

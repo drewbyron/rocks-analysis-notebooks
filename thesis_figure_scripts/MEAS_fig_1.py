@@ -148,7 +148,7 @@ def make_fb_combined_snr_test_plot(snr_study, fig_path):
     ratio_exp.loc[:, "sRatio"] = C * ratio_exp.loc[:, "sRatio"]
 
     f, (ax0, ax1) = plt.subplots(
-        2, 1, gridspec_kw={"height_ratios": [3, 1]}, figsize=(12, 8)
+        2, 1, gridspec_kw={"height_ratios": [2.5, 1]}, figsize=(12, 7)
     )
 
     # Plot the experimental ratio.
@@ -159,7 +159,7 @@ def make_fb_combined_snr_test_plot(snr_study, fig_path):
         label = "Data", 
         marker="o",
         ls="None",
-        ms=4,
+        ms=5,
         alpha=1,
         color="black",
     )
@@ -197,6 +197,8 @@ def make_fb_combined_snr_test_plot(snr_study, fig_path):
         color="black",
     )
 
+    ax1.axhline(y=0, color="#1f77b4", linestyle="-")
+    
     ax0.set_ylabel("$N(^{19}$Ne$)/N(^{6}$He$)$")
     ax1.set_xlabel("Field (T)")
     ax1.set_ylabel(r"Residuals ($\sigma$)")

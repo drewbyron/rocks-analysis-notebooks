@@ -194,6 +194,9 @@ def add_field_wise_norm(events, cols=["mMeanSNR", "uniform_rand"]):
             events_copy.loc[cond, (col_mn)] = (col_vals - col_vals.quantile(0.01)) / (
                 col_vals.quantile(0.99) - col_vals.quantile(0.01)
             )
+            # events_copy.loc[cond, (col_mn)] = (col_vals) / (
+            #     col_vals.quantile(0.99)
+            # )
 
     return events_copy
 
