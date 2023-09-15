@@ -1,6 +1,9 @@
 # Author: Drew Byron
 # Date: 04/07/2023
+"""
+Description: Energy domain plots of the ratios presented in MEAS_fit_2.py. 
 
+"""
 # Imports.
 import sys
 import numpy as np
