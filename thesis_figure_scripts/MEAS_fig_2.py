@@ -280,7 +280,7 @@ event_cuts = {
 snr_study = dl.load_snr_study()
 
 # Can add to these lists to generate more plots.
-snr_cuts = [-np.inf, .5]
+snr_cuts = [ .5]
 start_freqs = [200]
 
 # Make all possible pairs of the above cuts:

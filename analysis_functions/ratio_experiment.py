@@ -8,6 +8,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+
+def prep_events(events, cuts, normed_cols =["mMeanSNR", "EventTimeLength", "uniform_rand"], ): 
+
+    # Add composite or normalized features.
+    events = add_detectability(events)
+    events = add_uniform_rand(events)
+    events = add_field_wise_percentage(events, cols=normed_cols)
+    events = add_field_wise_norm(events, cols=normed_cols)
+
+    # Collect all valid events.
+    print(events.columns)
+    valid_events = cut_df(events, cuts)
+
+    return valid_events
+
 def build_spectrum(
     events,
     root_files,
@@ -38,14 +53,16 @@ def build_spectrum(
         user about the effect of the cuts applied.
     """
 
-    # Add composite or normalized features.
-    events = add_detectability(events)
-    events = add_uniform_rand(events)
-    events = add_field_wise_percentage(events, cols=normed_cols)
-    events = add_field_wise_norm(events, cols=normed_cols)
+    # # Add composite or normalized features.
+    # events = add_detectability(events)
+    # events = add_uniform_rand(events)
+    # events = add_field_wise_percentage(events, cols=normed_cols)
+    # events = add_field_wise_norm(events, cols=normed_cols)
 
-    # Collect all valid events.
-    valid_events = cut_df(events, cuts)
+    # # Collect all valid events.
+    # valid_events = cut_df(events, cuts)
+
+    valid_events = prep_events(events, cuts, normed_cols)
 
     if diagnostics:
         # Take stock of what events were like before the cuts.

@@ -1,7 +1,9 @@
 # Author: Drew Byron
 # Date: 04/07/2023
 """
-Description: This module makes field-wise time length histograms. 
+Description: This module makes the field-wise histogram that is used to 
+argue that the .75 T and 1.25 T fields should be dropped. The event 
+length distributions are notably different.  
 
 """
 # Imports.
@@ -51,39 +53,24 @@ import thesis_figure_scripts.data_loaders as dl
 params = {
     "axes.titlesize": 15,
     "legend.fontsize": 14,
-    "axes.labelsize": 14,
+    "axes.labelsize": 15,
     "xtick.labelsize": 14,
     "ytick.labelsize": 14,
 }
 plt.rcParams.update(params)
 
 
-def track_len_pdf_field(field, slew_cycle=35e-3, freq_BW=1.1e9):
-
-    freq = 18.55e9
-    power_larmor = sc.power_larmor(field, freq)
-    energy = sc.freq_to_energy(freq, field)
-    slope = sc.df_dt(energy, field, power_larmor)
-
-    return track_len_pdf(slope, slew_cycle, freq_BW)
-
-
-def track_len_pdf(slope, slew_cycle, freq_BW):
-
-    T1 = slew_cycle
-    T2 = freq_BW / slope
-
-    Tmax = np.minimum(T1, T2)
-    ls = np.linspace(0, Tmax, 200)
-
-    pdf = (T1 + T2 - 2 * ls) / (T1 * T2)
-    pdf[np.logical_or(ls < 0, ls > np.minimum(T1, T2))] = 0
-
-    return ls, pdf
-
-
 def hist_grid_by_field(
-    events_ne, events_he, feature, cuts, normed_cols, nrows, yscale, bins, fig_path=""
+    events_ne,
+    events_he,
+    feature,
+    cuts,
+    normed_cols,
+    nrows,
+    yscale,
+    bins,
+    fig_path="",
+    add_time_length_pdf=False,
 ):
 
     events_ne = re.prep_events(events_ne, cuts, normed_cols)
@@ -91,11 +78,11 @@ def hist_grid_by_field(
 
     grouped_ne = events_ne.groupby("set_field")
     grouped_he = events_he.groupby("set_field")
-    rowlength = int(np.ceil(grouped_ne.ngroups / 3))
+    rowlength = int(np.ceil(grouped_ne.ngroups / 4))
     fig, axs = plt.subplots(
-        figsize=(25, 12),
-        nrows=3,
-        ncols=rowlength,  # fix as above
+        figsize=(12, 12),
+        nrows=4,
+        ncols=3,  # fix as above
         gridspec_kw=dict(hspace=0.8),
     )  # Much control of gridspec
 
@@ -103,11 +90,13 @@ def hist_grid_by_field(
 
     for i, (key, ax) in enumerate(targets):
 
+
         ne_field = grouped_ne.get_group(key)[feature]
         he_field = grouped_he.get_group(key)[feature]
 
-        if feature == "EventTimeLength":
+        if feature == "EventTimeLength" and add_time_length_pdf:
             freq_BW = cuts["EventStartFreq"][1] - cuts["EventStartFreq"][0]
+            print(freq_BW)
             ls, pdf = track_len_pdf_field(field=key, slew_cycle=35e-3, freq_BW=freq_BW)
             ax.plot(ls, pdf, color=str(0), label="pdf")
 
@@ -120,12 +109,13 @@ def hist_grid_by_field(
         ax.hist(
             he_field, bins=bins, histtype="step", density=True, label="He", color="c"
         )
-        ax.set_title(f"field: {key} T. SNR cut p = . KS pval = {ks.pvalue:.4f}")
+        ax.set_title(f"Field: {key} T")
         ax.set_yscale(yscale)
-        ax.set_xlabel(feature)
-        ax.legend()
-    plt.show()
-    fig.suptitle(f"{feature}. Cuts = {cuts}.", fontsize=25)
+        ax.set_xlabel("Event Length (s)")
+
+        if i in [0,1]: ax.legend(loc = "upper right")
+        else: ax.legend(loc = "lower left")
+
     plt.savefig(fig_path, bbox_inches="tight", dpi=300)
 
     return None
@@ -154,8 +144,11 @@ event_cuts = {
 snr_study = dl.load_snr_study()
 
 # Can add to these lists to generate more plots.
-snr_cuts = [-np.inf, 0.5]
-start_freqs = [200]
+# snr_cuts = [ .4]
+# start_freqs = [200]
+
+snr_cuts = [-np.inf]
+start_freqs = [0]
 
 # Make all possible pairs of the above cuts:
 specific_cuts = np.array(np.meshgrid(snr_cuts, start_freqs)).T.reshape(-1, 2)
@@ -164,9 +157,9 @@ print(specific_cuts)
 # Set parameters of plot.
 
 nrows = 3
-bins = 100
+bins = 60
 yscale = "log"
-yscale = "linear"
+add_time_length_pdf = False
 
 # Set fig path.
 base_path = (
@@ -174,8 +167,9 @@ base_path = (
 )
 fig_base_name = "MEAS_fig_4_"
 
-features = ["EventTimeLength", "EventStartFreq", "mMeanSNR"]
-normed_cols=["mMeanSNR", "EventTimeLength", "uniform_rand"]
+features = ["EventTimeLength"]
+# features = [ "EventStartFreq"]
+normed_cols = ["mMeanSNR", "EventTimeLength", "uniform_rand"]
 
 for feature in features:
 
@@ -190,7 +184,7 @@ for feature in features:
 
         print(f"Building hist for {feature}. cut = {snr_cut}.")
 
-        fig_path = base_path + f"events_hist_{feature}_cuts_.png"
+        fig_path = base_path + f"events_hist_{feature}_cutting_low_fields.png"
 
         snr_threshold = 9
 
@@ -207,5 +201,7 @@ for feature in features:
             yscale,
             bins,
             fig_path=fig_path,
+            add_time_length_pdf=add_time_length_pdf,
         )
 
+plt.show()
