@@ -115,10 +115,10 @@ def make_from_below_fraction_plot(slew_time, dir_path, n_tot=1e6, rerun_sims=Fal
     within_cut = {"EventStartFreq": (18.001e9, 19.1e9)}
 
     spectra_ne_below, spectra_he_below = fb.build_MC_spectra(
-        events_ne, events_he, below_cut, monitor_rate=10**5
+        events_ne, events_he, below_cut, monitor_rate=10**7
     )
     spectra_ne_within, spectra_he_within = fb.build_MC_spectra(
-        events_ne, events_he, within_cut, monitor_rate=10**5
+        events_ne, events_he, within_cut, monitor_rate=10**7
     )
 
     # Here we calculate the percent of events originating below the visible bandwidth
@@ -129,11 +129,12 @@ def make_from_below_fraction_plot(slew_time, dir_path, n_tot=1e6, rerun_sims=Fal
         spectra_he_below / (spectra_he_below + spectra_he_within)
     ).event_count.values * 100
 
+    print(he_from_below)
     # Plot results.
     fig0, ax0 = plt.subplots(figsize=(12, 6))
 
-    plt.plot(set_fields, ne_from_below, marker="o", ms=5, color="g", label="Ne")
-    plt.plot(set_fields, he_from_below, marker="o", ms=5, color="c", label="He")
+    plt.plot(set_fields, ne_from_below, marker="o", ms=5, color="g", label="Ne19")
+    plt.plot(set_fields, he_from_below, marker="o", ms=5, color="c", label="He6")
 
     # ax0.set_yscale("log")
     ax0.set_ylabel(r"Events originating below 18.0 GHz ($\%$)")
@@ -207,7 +208,7 @@ def make_change_in_ratio_plot(slew_times, dir_path):
 
 slew_times = [35e-3, 10e-3]
 n_tot = 1e7
-rerun_sims = False
+rerun_sims = True
 
 for slew_time in slew_times:
 

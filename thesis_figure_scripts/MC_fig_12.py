@@ -83,6 +83,7 @@ def energy_domain_plot(
 
 
 isotopes = ["He6", "Ne19"]
+colors = ["c", "g"]
 
 set_fields = np.arange(0.75, 3.5, 0.5)
 
@@ -112,7 +113,7 @@ ratio_bl = rp.AUC_expectation(set_fields, freq_BWs_bl, b=0, plot=False)
 ratio_ext = rp.AUC_expectation(set_fields, freq_BWs_ext, b=0, plot=False)
 
 
-for isotope in isotopes:
+for (isotope, color) in zip(isotopes, colors):
 
     fig0, ax0 = plt.subplots(figsize=(12, 6))
 
@@ -126,9 +127,9 @@ for isotope in isotopes:
         width=gamma_widths_bl,
         align="edge",
         fill=True,
-        color="b",
+        color=color,
         alpha=0.2,
-        edgecolor="b",
+        edgecolor=color,
         label="18.0-19.1 GHz",
     )
 
@@ -150,13 +151,13 @@ for isotope in isotopes:
 
     Ws = np.linspace(1.001, bspec.W0 - 0.001, 300)
     pdf = bspec.dNdE(Ws)
-    ax0.plot(Ws, pdf, label=f"{isotope}", color = "b")
+    ax0.plot(Ws, pdf, label=f"{isotope} SM pdf", color = color)
 
     # Make plot labels and titles.
     ax0.set_xlabel(r"$\gamma$")
     ax0.set_ylabel(r"$\frac{dN}{d\gamma}$")
 
-    ax0.set_xlim(0.85, Ws.max() + 0.25)
+    ax0.set_xlim(0.85, 8.1)
 
     ax0.legend()
 
