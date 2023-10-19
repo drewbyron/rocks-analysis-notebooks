@@ -1,6 +1,9 @@
 # Author: Drew Byron
 # Date: 04/07/2023
-
+"""
+Description: This module runs and plots a study of the wall effect and its
+mitigation via finer binning of the BW. 
+"""
 # Imports.
 import sys
 import numpy as np

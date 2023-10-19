@@ -1,6 +1,10 @@
 # Author: Drew Byron
 # Date: 04/07/2023
-
+"""
+Description: This module runs and plots the results of a study of the 
+ratio's sensitivity to main field drifts. Set rerun = True if running 
+for the first time. 
+"""
 # Imports.
 import sys
 import numpy as np
@@ -112,6 +116,7 @@ ax.plot(
 )
 
 ax.set_xscale("log")
+# ax.set_yscale("log")
 ax.legend()
 ax.set_xlabel(r"Field error ($\sigma_B$ or $\Delta B$)")
 ax.set_ylabel(r"Fit value for $b_{Fierz}$")

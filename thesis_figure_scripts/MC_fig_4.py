@@ -1,6 +1,10 @@
 # Author: Drew Byron
 # Date: 04/07/2023
-
+"""
+Description: This module runs and plots the results of a study of the 
+ratio's sensitivity to beta monitor drifts. Set rerun = True if running 
+for the first time. 
+"""
 # Imports.
 import sys
 import numpy as np
@@ -71,7 +75,7 @@ mon_drift_df = pd.read_csv(mon_drift_path, index_col=0)
 
 
 # --- Making fig 4 for thesis MC section.
-fig, ax = plt.subplots(figsize=(10, 6))
+fig, ax = plt.subplots(figsize=(10, 4))
 
 ax.plot(
     mon_drift_df.columns.to_series().astype(float).round(5),
@@ -84,6 +88,7 @@ ax.plot(
 
 
 ax.set_xscale("log")
+# ax.set_yscale("log")
 ax.legend()
 ax.set_xlabel(r"Linear monitor drift ($\Delta_{mon}$)")
 ax.set_ylabel(r"Fit value for $b_{Fierz}$")

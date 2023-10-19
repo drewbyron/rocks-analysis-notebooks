@@ -60,7 +60,7 @@ def simple_MC(
         spectra_he_exp["event_count"] = np.random.poisson(spectra_he_exp["event_count"])
 
     # Be careful to use this (correct but alternate) normalization.
-    ratio_exp = re.build_ratio_altnorm(spectra_ne_exp, spectra_he_exp)
+    ratio_exp = re.build_ratio(spectra_ne_exp, spectra_he_exp)
 
     return ratio_exp, spectra_ne_exp, spectra_he_exp
 

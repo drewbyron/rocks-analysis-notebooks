@@ -1,6 +1,9 @@
 # Author: Drew Byron
 # Date: 04/07/2023
-
+"""
+Description: This module runs and plots the results of a study of the 
+ratio's sensitivity to the number of cres events (X_{CRES}).
+"""
 # Imports.
 import sys
 import numpy as np

@@ -1,6 +1,9 @@
 # Author: Drew Byron
 # Date: 04/07/2023
-
+"""
+Description: This module makes a simulated ratio plot in the same style 
+as the prl ratio plot. 
+"""
 # Imports.
 import sys
 import numpy as np
@@ -33,12 +36,13 @@ import mc_functions.from_below as fb
 # Set plot parameters.
 params = {
     "axes.titlesize": 15,
-    "legend.fontsize": 12,
-    "axes.labelsize": 12,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12,
+    "legend.fontsize": 14,
+    "axes.labelsize": 14,
+    "xtick.labelsize": 14,
+    "ytick.labelsize": 14,
 }
 plt.rcParams.update(params)
+
 
 # Set fig path.
 fig_dir = Path("/media/drew/T7 Shield/thesis_figures/monte_carlo")
@@ -111,6 +115,10 @@ ratio_exp, spectra_ne_exp, spectra_he_exp = mc.simple_MC(
 
 ratio_pred = rp.AUC_expectation(set_fields, freq_BWs, b=b, plot=False)
 
+ratio_pred_b1n = rp.AUC_expectation(set_fields, freq_BWs, b=-1, plot=False)
+ratio_pred_b1p = rp.AUC_expectation(set_fields, freq_BWs, b=+1, plot=False)
+print(ratio_exp, ratio_pred)
+
 # Conduct fit.
 my_pars = Parameters()
 my_pars.add("C", value=1, min=0, max=10, vary=True)
@@ -123,7 +131,7 @@ print(fit_report(result.params))
 
 # Plot results.
 f, (ax0, ax1) = plt.subplots(
-    2, 1, gridspec_kw={"height_ratios": [3, 1]}, figsize=(12, 7)
+    2, 1, gridspec_kw={"height_ratios": [2.5, 1]}, figsize=(12, 7)
 )
 
 C = result.params["C"].value
@@ -132,30 +140,73 @@ ratio_exp_cp = ratio_exp.copy()
 ratio_exp_cp["Ratio"] = C * ratio_exp_cp["Ratio"]
 ratio_exp_cp["sRatio"] = C * ratio_exp_cp["sRatio"]
 
-plot_sim_exp_ratio(ratio_exp_cp, ax0)
-plot_predicted_ratio(ratio_pred, ax0)
+# plot_sim_exp_ratio(ratio_exp_cp, ax0)
+# plot_predicted_ratio(ratio_pred, ax0)
 
 # ax0.set_yscale("log")
-ax0.set_ylabel("ratio")
-ax1.set_ylabel(r"$\sigma$")
-ax0.set_title(f"Simulated Experiment. Counts per isotope: 10^4")
+# ax0.set_ylabel("ratio")
+# ax1.set_ylabel(r"$\sigma$")
+# ax0.set_title(f"Simulated Experiment. Counts per isotope: 10^4")
 ax0.legend()
 
 ax0.set_ylabel("ratio")
 ax1.set_xlabel("Set Field (T)")
 ax1.set_ylim(-2,2)
+ax0.set_ylim(-.5, 5)
 
+# Plot the experimental ratio.
+ax0.errorbar(
+    ratio_exp_cp.index,
+    ratio_exp_cp.Ratio,
+    yerr=ratio_exp_cp["sRatio"],
+    label = "Data (simulated)", 
+    marker="o",
+    ls="None",
+    ms=5,
+    alpha=1,
+    color="black",
+)
 
+ax0.plot(
+    ratio_pred.index,
+    ratio_pred.Ratio,
+    label=r"Predicted" "\n" r"($b=0$)",
+    color="#1f77b4",
+    alpha=1,
+)
+
+ax0.plot(
+    ratio_pred_b1p.index,
+    ratio_pred_b1p.Ratio,
+    label=r"Predicted" "\n" r"($b=\pm1$)",
+    color="green",
+    linestyle="--",
+    alpha=0.8,
+)
+
+ax0.plot(
+    ratio_pred_b1n.index,
+    ratio_pred_b1n.Ratio,
+    color="green",
+    linestyle="--",
+    alpha=0.8,
+)
 ax1.plot(
     ratio_pred.index,
     (ratio_exp_cp.Ratio - ratio_pred.Ratio) / ratio_exp_cp.sRatio,
-    label=f"residuals",
     marker="o",
     ls="None",
     ms=6,
-    color="tab:blue",
+    color="black",
 )
-ax1.legend()
+
+ax1.axhline(y=0, color="#1f77b4", linestyle="-")
+
+ax0.set_ylabel("$N(^{19}$Ne$)/N(^{6}$He$)$")
+ax1.set_xlabel("Field (T)")
+ax1.set_ylabel(r"Residuals ($\sigma$)")
+
+ax0.legend()
 
 # Save and display the figure.
 plt.savefig(fig_path, bbox_inches="tight", dpi=300)

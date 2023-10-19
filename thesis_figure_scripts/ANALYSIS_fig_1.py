@@ -61,8 +61,6 @@ plt.rcParams.update(params)
 
 
 
-
-
 def make_viz_0(fig_path, config, exp_results):
 
 
