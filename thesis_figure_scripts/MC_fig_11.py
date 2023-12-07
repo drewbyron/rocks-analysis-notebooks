@@ -39,7 +39,7 @@ import mc_functions.from_below as fb
 params = {
     "axes.titlesize": 15,
     "legend.fontsize": 14,
-    "axes.labelsize": 14,
+    "axes.labelsize": 15,
     "xtick.labelsize": 14,
     "ytick.labelsize": 14,
 }
@@ -197,7 +197,7 @@ def make_change_in_ratio_plot(slew_times, dir_path):
             ms=6,
         )
 
-    ax0.set_ylabel(r"Ratio relative difference ($\%$)")
+    ax0.set_ylabel(r"Correction to Naive Ratio ($\%$)")
     ax0.set_xlabel("Field (T)")
     ax0.legend()
 
@@ -207,7 +207,7 @@ def make_change_in_ratio_plot(slew_times, dir_path):
 
 
 slew_times = [35e-3, 10e-3]
-n_tot = 1e7
+n_tot = 5e6
 rerun_sims = True
 
 for slew_time in slew_times:
